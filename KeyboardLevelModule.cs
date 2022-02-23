@@ -102,7 +102,8 @@ namespace Lumiere
                     currentStateKeyboard = (lumiereController.data.ColorValueRButtonPressedGetSet
                                             ^ lumiereController.data.ColorValueGButtonPressedGetSet
                                             ^ lumiereController.data.ColorValueBButtonPressedGetSet
-                                            ^ lumiereController.data.LightIntensityButtonPressedGetSet)
+                                            ^ lumiereController.data.LightIntensityButtonPressedGetSet
+                                            ^ lumiereController.data.LightRangeButtonPressedGetSet)
                                             && !keyboard.activeSelf;
                     // Rising edge
                     if (keyboard != null && currentStateKeyboard != previousStateKeyboard && previousStateKeyboard == false)

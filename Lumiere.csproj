@@ -121,10 +121,11 @@
   <ItemGroup>
     <Compile Include="KeyboardLevelModule.cs" />
     <Compile Include="LumiereController.cs" />
-    <Compile Include="LumiereItem.cs" />
-    <Compile Include="LumiereItemModule.cs" />
+    <Compile Include="LumiereItemBase.cs" />
     <Compile Include="LumiereLevelModule.cs" />
     <Compile Include="LumiereMenuModule.cs" />
+    <Compile Include="LumiereNormalMode.cs" />
+    <Compile Include="LumierePreviewMode.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SnippetCode.cs" />
   </ItemGroup>

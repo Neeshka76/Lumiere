@@ -14,6 +14,7 @@ namespace Lumiere
         public float ColorGValueGetSet { get; set; }
         public float ColorBValueGetSet { get; set; }
         public float LightIntensityGetSet { get; set; }
+        public float LightRangeGetSet { get; set; }
 
         public bool holdingALightRightHand { get; set; }
         public bool holdingALightLeftHand { get; set; }
@@ -27,8 +28,15 @@ namespace Lumiere
         public bool ColorValueBButtonPressedGetSet { get; set; }
         // Set if Player has pressed the button Intensity Light
         public bool LightIntensityButtonPressedGetSet { get; set; }
+        // Set if Player has pressed the button Range
+        public bool LightRangeButtonPressedGetSet { get; set; }
 
         public bool SpawnLight { get; set; }
+
+        public bool DisableMeshRendererGetSet { get; set; }
+        public bool PointToLightsGetSet { get; set; }
+        public bool PreviewLight { get; set; }
+
 
         // Set if Keyboard has pressed enter button finish
         public bool KeyboardFinishEnterButtonPressedGetSet { get; set; }

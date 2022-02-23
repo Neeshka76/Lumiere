@@ -470,7 +470,6 @@ namespace SnippetCode
                     nbFreeSlots++;
                 }
             }
-
             return nbFreeSlots;
         }
 
