@@ -15,6 +15,9 @@ namespace Lumiere
         private bool telegrabRight = false;
         private bool telegrabLeft = false;
         private LineRenderer lineRenderer;
+        public bool isStuck = false;
+        public Item itemStuck;
+        private FixedJoint stickyJoint;
 
         public override void Awake()
         {
@@ -23,10 +26,8 @@ namespace Lumiere
             itemLumiere.OnUngrabEvent += ItemLumiere_OnUngrabEvent;
             itemLumiere.OnTelekinesisGrabEvent += ItemLumiere_OnTelekinesisGrabEvent;
             itemLumiere.OnTelekinesisReleaseEvent += ItemLumiere_OnTelekinesisReleaseEvent;
-            foreach (CollisionHandler handler in itemLumiere.collisionHandlers)
-            {
-                handler.SetPhysicModifier(this, 5, 0, 0, 1000f, 1000f);
-            }
+            itemLumiere.data.flyFromThrow = false;
+            Player.local.creature.handRight.UnGrab(false);
             Player.local.creature.handRight.Grab(itemLumiere.GetMainHandle(Side.Right), true);
         }
 
@@ -37,7 +38,7 @@ namespace Lumiere
             {
                 if (lineRenderer != null)
                 {
-                    GameObject.Destroy(lineRenderer);
+                    Destroy(lineRenderer);
                 }
                 pointsToLight = lumiereController.data.PointToLightsGetSet;
             }
@@ -60,6 +61,58 @@ namespace Lumiere
                 pointsToLight = lumiereController.data.PointToLightsGetSet;
             }
             
+            if(!isStuck && (itemLumiere.isFlying || itemLumiere.isThrowed))
+            {
+                foreach (CollisionHandler handler in itemLumiere.collisionHandlers)
+                {
+                    handler.SetPhysicModifier(this, 5, 0, 0, 1000f, 1000f);
+                }
+                itemLumiere.rb.velocity = vec3zero;
+                itemLumiere.rb.angularVelocity = vec3zero;
+                DisableCollision();
+            }
+
+
+            if(lumiereController.data.IsStickyGetSet)
+            {
+                if(!isStuck && (lumiereController.data.holdingALightRightHand && Player.local.handRight.controlHand.castPressed && Player.local.handRight.controlHand.gripPressed ||
+                                  lumiereController.data.holdingALightLeftHand && Player.local.handLeft.controlHand.castPressed && Player.local.handLeft.controlHand.gripPressed))
+                {
+                    itemStuck = SnippetCode.SnippetCode.ClosestItemAroundItemOverlapSphere(itemLumiere, 0.2f);
+                    if (itemStuck != null)
+                    {
+                        stickyJoint = new FixedJoint();
+                        stickyJoint = SnippetCode.SnippetCode.CreateStickyJointBetweenTwoRigidBodies(itemLumiere.rb, itemStuck.rb, stickyJoint);
+                        SetTKHandle(false);
+                        foreach (CollisionHandler handler in itemLumiere.collisionHandlers)
+                        {
+                            handler.SetPhysicModifier(this, 5, 0, 0, 0f, 0f);
+                        }
+                        DisableCollision();
+                        isStuck = true;
+                        if (lumiereController.data.holdingALightRightHand)
+                        {
+                            Player.local.creature.handRight.UnGrab(false);
+                        }
+                        if (lumiereController.data.holdingALightLeftHand)
+                        {
+                            Player.local.creature.handLeft.UnGrab(false);
+                        }
+                    }
+                }
+                if (isStuck && itemLumiere.handles.FirstOrDefault(handle => handle.data.disableTouch == true))
+                {
+                    SetTouchHandle(true);
+                }
+            }
+            else
+            {
+                if(isStuck && itemLumiere.handles.FirstOrDefault(handle => handle.data.disableTouch == false))
+                {
+                    SetTouchHandle(false);
+                }
+            }
+
             if (itemLumiere.isTelekinesisGrabbed && telegrabLeft && Player.local.handLeft.controlHand.castPressed && Player.local.handLeft.controlHand.alternateUsePressed)
             {
                 Player.local.creature.handLeft.Grab(itemLumiere.GetMainHandle(Side.Left), true);
@@ -107,12 +160,15 @@ namespace Lumiere
         /// </summary>
         private void ItemLumiere_OnUngrabEvent(Handle handle, RagdollHand ragdollHand, bool throwing)
         {
-            foreach (CollisionHandler handler in itemLumiere.collisionHandlers)
+            if (!isStuck)
             {
-                handler.SetPhysicModifier(this, 5, 0, 0, 1000f, 1000f);
+                foreach (CollisionHandler handler in itemLumiere.collisionHandlers)
+                {
+                    handler.SetPhysicModifier(this, 5, 0, 0, 1000f, 1000f);
+                }
+                itemLumiere.rb.velocity = vec3zero;
+                itemLumiere.rb.angularVelocity = vec3zero;
             }
-            itemLumiere.rb.velocity = vec3zero;
-            itemLumiere.rb.angularVelocity = vec3zero;
             if (ragdollHand.side == Side.Right)
             {
                 lumiereController.data.holdingALightRightHand = false;
@@ -129,6 +185,15 @@ namespace Lumiere
         /// </summary>
         private void ItemLumiere_OnGrabEvent(Handle handle, RagdollHand ragdollHand)
         {
+            if(isStuck)
+            {
+                if (stickyJoint != null)
+                {
+                    Destroy(stickyJoint);
+                }
+                SetTKHandle(true);
+                isStuck = false;
+            }
             foreach (CollisionHandler handler in itemLumiere.collisionHandlers)
             {
                 handler.RemovePhysicModifier(this);
@@ -163,7 +228,24 @@ namespace Lumiere
             {
                 itemLumiere.handlers[i].UnGrab(false);
             }
-            GameObject.Destroy(lineRenderer);
+            Destroy(lineRenderer);
+        }
+
+        private void SetTKHandle(bool active)
+        {
+            for (int i = itemLumiere.handles.Count() - 1; i >= 0; --i)
+            {
+                itemLumiere.handles[i].SetTelekinesis(active);
+                itemLumiere.handles[i].data.allowTelekinesis = active;
+            }
+        }
+        private void SetTouchHandle(bool active)
+        {
+            for (int i = itemLumiere.handles.Count() - 1; i >= 0; --i)
+            {
+                itemLumiere.handles[i].SetTouch(active);
+                itemLumiere.handles[i].data.disableTouch = !active;
+            }
         }
     }
 }

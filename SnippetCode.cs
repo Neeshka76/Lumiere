@@ -102,6 +102,13 @@ namespace SnippetCode
         {
             return obj.GetComponent<T>() ?? obj.AddComponent<T>();
         }
+
+        /// <summary>
+        /// .Select(), but only when the output of the selection function is non-null
+        /// </summary>
+        public static IEnumerable<TOut> SelectNotNull<TIn, TOut>(this IEnumerable<TIn> enumerable, Func<TIn, TOut> func)
+            => enumerable.Where(item => func(item) != null).Select(func);
+
         public static bool IsPlayer(this RagdollPart part) => part?.ragdoll?.creature.isPlayer == true;
         public static bool IsImportant(this RagdollPart part)
         {
@@ -275,6 +282,19 @@ namespace SnippetCode
             return joint;
         }
 
+        public static FixedJoint CreateStickyJointBetweenTwoRigidBodies(this Rigidbody startRB, Rigidbody targetRB, FixedJoint joint)
+        {
+            joint = targetRB.gameObject.AddComponent<FixedJoint>();
+            joint.anchor = Vector3.zero;
+            joint.connectedBody = startRB;
+            joint.connectedAnchor = Vector3.zero;
+            joint.massScale = 0.00001f;
+            joint.connectedMassScale = 10000f;
+            joint.breakForce = Mathf.Infinity;
+            joint.breakTorque = Mathf.Infinity;
+            return joint;
+        }
+
         public static void IgnoreCollider(this Ragdoll ragdoll, Collider collider, bool ignore = true)
         {
             foreach (var part in ragdoll.parts)
@@ -388,6 +408,15 @@ namespace SnippetCode
         {
             Debug.Log("SnippetCode : " + textToDisplay + " : " + "Position X : " + position.x.ToString() + "; Position Y : " + position.y.ToString() + "; Position Z : " + position.z.ToString());
         }
+        public static void DebugRotation(this Quaternion rotation, string textToDisplay)
+        {
+            Debug.Log("SnippetCode : " + textToDisplay + " : " + "Rotation X : " + rotation.x.ToString() + "; Rotation Y : " + rotation.y.ToString() + "; Rotation Z : " + rotation.z.ToString());
+        }
+        public static void DebugPositionAndRotation(this Transform transform, string textToDisplay)
+        {
+            Debug.Log("SnippetCode : " + textToDisplay + " : " + "Position X : " + transform.position.x.ToString() + "; Position Y : " + transform.position.y.ToString() + "; Position Z : " + transform.position.z.ToString());
+            Debug.Log("SnippetCode : " + textToDisplay + " : " + "Rotation X : " + transform.rotation.x.ToString() + "; Rotation Y : " + transform.rotation.y.ToString() + "; Rotation Z : " + transform.rotation.z.ToString());
+        }
 
         private static IEnumerator LerpMovement(this Vector3 positionToReach, Quaternion rotationToReach, Item itemToMove, float durationOfMvt)
         {
@@ -458,6 +487,55 @@ namespace SnippetCode
                 list.Add(creature.mana.casterRight.telekinesis.catchedHandle?.item);
             }
             return list;
+        }
+        public static IEnumerable<Item> ItemsInRadiusAroundItem(this Vector3 position, Item thisItem, float radius)
+        {
+            return Item.allActive.Where(item =>
+                ((item.transform.position - position).sqrMagnitude < radius * radius) && !thisItem
+            );
+        }
+
+        public static IEnumerable<Item> ItemsInRadius(Vector3 position, float radius)
+        {
+            return Physics.OverlapSphere(position, radius, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore)
+                .SelectNotNull(collider => collider.attachedRigidbody?.GetComponent<CollisionHandler>()?.item)
+                .Distinct();
+        }
+
+        public static Item ClosestItemAroundItem(this Item thisItem, float radius)
+        {
+            float lastRadius = Mathf.Infinity;
+            Item lastItem = null;
+            float thisRadius;
+            foreach (Item item in Item.allActive.Where(itemSelect => itemSelect != thisItem))
+            {
+                thisRadius = (item.transform.position - thisItem.transform.position).sqrMagnitude;
+                if (thisRadius < radius * radius && thisRadius < lastRadius)
+                {
+                    lastRadius = thisRadius;
+                    lastItem = item;
+                }
+            }
+            return lastItem;
+        }
+
+        public static Item ClosestItemAroundItemOverlapSphere(this Item thisItem, float radius)
+        {
+            float lastRadius = Mathf.Infinity;
+            Collider lastCollider = null;
+            float thisRadius;
+            List<Collider> colliders = Physics.OverlapSphere(thisItem.transform.position, radius, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore)
+                .Distinct().Where(coll => coll.attachedRigidbody?.GetComponent<CollisionHandler>()?.item != null && coll.attachedRigidbody?.GetComponent<CollisionHandler>()?.item != thisItem).ToList();
+            foreach (Collider collider in colliders)
+            {
+                thisRadius = (collider.ClosestPoint(thisItem.transform.position) - thisItem.transform.position).sqrMagnitude;
+                if (thisRadius < radius * radius && thisRadius < lastRadius)
+                {
+                    lastRadius = thisRadius;
+                    lastCollider = collider;
+                }
+            }
+            return lastCollider.attachedRigidbody.GetComponent<CollisionHandler>().item;
         }
 
         public static int ReturnNbFreeSlotOnCreature(this Creature creature)

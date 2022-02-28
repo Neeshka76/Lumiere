@@ -13,7 +13,6 @@ namespace Lumiere
         public Item itemLumiere { get; protected set; }
         protected Light light;
         protected bool disableMesh = false;
-        public bool isSticky = false;
         public LumiereController lumiereController;
 
         public virtual void Awake()

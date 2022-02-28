@@ -36,6 +36,12 @@ namespace Lumiere
             }
         }
 
+        public override void OnUnload()
+        {
+            EventManager.onPossess -= EventManager_onPossess;
+        }
+
+
         public override void Update()
         {
             base.Update();
@@ -53,7 +59,7 @@ namespace Lumiere
                     }, Player.local.creature.handRight.transform.position + Player.local.creature.handRight.transform.forward * 0.1f);
                     lumiereController.data.SpawnLight = false;
                 }
-                if(lumiereController.data.PreviewLight && previewModeOn == false)
+                if(lumiereController.data.PreviewLightGetSet && previewModeOn == false)
                 {
                     Catalog.GetData<ItemData>("LumiereItem").SpawnAsync(item =>
                     {
@@ -64,7 +70,7 @@ namespace Lumiere
                     }, Player.local.head.transform.position + Player.local.head.transform.forward * 0.5f);
                     previewModeOn = true;
                 }
-                previewModeOn = lumiereController.data.PreviewLight;
+                previewModeOn = lumiereController.data.PreviewLightGetSet;
                 if (lumiereController.data.holdingALightRightHand && PlayerControl.handRight.alternateUsePressed && !Player.local.handRight.controlHand.castPressed)
                 {
                     lumiereItemsList.Remove(Player.local.handRight.ragdollHand.grabbedHandle.item);
