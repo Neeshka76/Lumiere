@@ -58,6 +58,10 @@ namespace Lumiere
                         lumiereItemsList.Add(lumiereItem);
                     }, Player.local.creature.handRight.transform.position + Player.local.creature.handRight.transform.forward * 0.1f);
                     lumiereController.data.SpawnLight = false;
+                    if (lumiereController.data.DisablePreviewAfterSpawnGetSet && lumiereController.data.PreviewLightGetSet)
+                    {
+                        lumiereController.data.PreviewLightGetSet = false;
+                    }
                 }
                 if(lumiereController.data.PreviewLightGetSet && previewModeOn == false)
                 {

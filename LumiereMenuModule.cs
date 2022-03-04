@@ -23,6 +23,8 @@ namespace Lumiere
         private Button btnSpawnLight;
         private Button btnDisableMeshRenderer;
         private Text txtDisableMeshRenderer;
+        private Button btnDisablePreviewAfterSpawn;
+        private Text txtDisablePreviewAfterSpawn;
         private Button btnPointToLights;
         private Text txtPointToLights;
         private Text txtDistancePreviewValue;
@@ -75,7 +77,8 @@ namespace Lumiere
             txtNegColorValueG = menu.GetCustomReference("txt_NegColorValueG").GetComponent<Text>();
             btnNegColorValueB = menu.GetCustomReference("btn_NegColorValueB").GetComponent<Button>();
             txtNegColorValueB = menu.GetCustomReference("txt_NegColorValueB").GetComponent<Text>();
-
+            txtDisablePreviewAfterSpawn = menu.GetCustomReference("txt_DisablePreviewAfterSpawn").GetComponent<Text>();
+            btnDisablePreviewAfterSpawn = menu.GetCustomReference("btn_DisablePreviewAfterSpawn").GetComponent<Button>();
             // Add an event listener for buttons
             btnColorValueR.onClick.AddListener(ClickColorRValue);
             btnColorValueG.onClick.AddListener(ClickColorGValue);
@@ -90,6 +93,7 @@ namespace Lumiere
             btnNegColorValueR.onClick.AddListener(ClickNegColorR);
             btnNegColorValueG.onClick.AddListener(ClickNegColorG);
             btnNegColorValueB.onClick.AddListener(ClickNegColorB);
+            btnDisablePreviewAfterSpawn.onClick.AddListener(ClickDisablePreviewAfterSpawn);
 
             // Initialization of sliders
             sliderDistancePreview.wholeNumbers = false;
@@ -132,6 +136,7 @@ namespace Lumiere
             lumiereController.data.NegColorRGetSet = true;
             lumiereController.data.NegColorGGetSet = true;
             lumiereController.data.NegColorBGetSet = true;
+            lumiereController.data.DisablePreviewAfterSpawnGetSet = true;
 
             lumiereHook = menu.gameObject.AddComponent<LumiereHook>();
             lumiereHook.menu = this;
@@ -274,6 +279,12 @@ namespace Lumiere
             UpdateDataPageLeft1();
         }
 
+        public void ClickDisablePreviewAfterSpawn()
+        {
+            lumiereController.data.DisablePreviewAfterSpawnGetSet ^= true;
+            UpdateDataPageLeft1();
+        }
+
         public void UpdateDataPageLeft1()
         {
             ///
@@ -337,6 +348,7 @@ namespace Lumiere
             txtDisableMeshRenderer.text = lumiereController.data.DisableMeshRendererGetSet ? "Enabled" : "Disabled";
             txtPointToLights.text = lumiereController.data.PointToLightsGetSet ? "Enabled" : "Disabled";
             txtPreviewLight.text = lumiereController.data.PreviewLightGetSet ? "Enabled" : "Disabled";
+            txtDisablePreviewAfterSpawn.text = lumiereController.data.DisablePreviewAfterSpawnGetSet ? "Enabled" : "Disabled";
             txtStickyLights.text = lumiereController.data.IsStickyGetSet ? "Enabled" : "Disabled";
             txtNegColorValueR.text = lumiereController.data.NegColorRGetSet ? "+" : "-";
             txtNegColorValueG.text = lumiereController.data.NegColorGGetSet ? "+" : "-";

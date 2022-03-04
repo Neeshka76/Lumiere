@@ -44,6 +44,7 @@ namespace Lumiere
         public bool DisableMeshRendererGetSet { get; set; }
         public bool PointToLightsGetSet { get; set; }
         public bool PreviewLightGetSet { get; set; }
+        public bool DisablePreviewAfterSpawnGetSet { get; set; }
 
         public bool IsStickyGetSet { get; set; }
 
