@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
 using ThunderRoad;
+using SnippetCode;
 
 namespace Lumiere
 {
@@ -17,7 +18,10 @@ namespace Lumiere
         private LineRenderer lineRenderer;
         public bool isStuck = false;
         public Item itemStuck;
+        public RagdollPart partStuck;
         private FixedJoint stickyJoint;
+        private Creature creatureStuck;
+
 
         public override void Awake()
         {
@@ -60,12 +64,12 @@ namespace Lumiere
                 }
                 pointsToLight = lumiereController.data.PointToLightsGetSet;
             }
-            
-            if(!isStuck && (itemLumiere.isFlying || itemLumiere.isThrowed))
+
+            if (!isStuck && (itemLumiere.isFlying || itemLumiere.isThrowed))
             {
                 foreach (CollisionHandler handler in itemLumiere.collisionHandlers)
                 {
-                    handler.SetPhysicModifier(this, 5, 0, 0, 1000f, 1000f);
+                    handler.SetPhysicModifier(this, 0f, 0f, 1000f, 1000f);
                 }
                 itemLumiere.rb.velocity = vec3zero;
                 itemLumiere.rb.angularVelocity = vec3zero;
@@ -73,23 +77,45 @@ namespace Lumiere
             }
 
 
-            if(lumiereController.data.IsStickyGetSet)
+            if (lumiereController.data.IsStickyGetSet)
             {
-                if(!isStuck && (lumiereController.data.holdingALightRightHand && Player.local.handRight.controlHand.castPressed && Player.local.handRight.controlHand.gripPressed ||
+                if (!isStuck && (lumiereController.data.holdingALightRightHand && Player.local.handRight.controlHand.castPressed && Player.local.handRight.controlHand.gripPressed ||
                                   lumiereController.data.holdingALightLeftHand && Player.local.handLeft.controlHand.castPressed && Player.local.handLeft.controlHand.gripPressed))
                 {
-                    itemStuck = SnippetCode.SnippetCode.ClosestItemAroundItemOverlapSphere(itemLumiere, 0.2f);
-                    if (itemStuck != null)
+                    if (!lumiereController.data.StickToItemFalseCreatureTrueGetSet)
                     {
-                        stickyJoint = new FixedJoint();
-                        stickyJoint = SnippetCode.SnippetCode.CreateStickyJointBetweenTwoRigidBodies(itemLumiere.rb, itemStuck.rb, stickyJoint);
+                        itemStuck = Snippet.ClosestItemAroundItemOverlapSphere(itemLumiere, 0.2f);
+                        if (itemStuck != itemLumiere)
+                        {
+                            stickyJoint = new FixedJoint();
+                            stickyJoint = Snippet.CreateStickyJointBetweenTwoRigidBodies(itemLumiere.rb, itemStuck.rb, stickyJoint);
+                            itemStuck.OnDespawnEvent += ItemStuck_OnDespawnEvent;
+                            isStuck = true;
+                        }
+                    }
+                    else
+                    {
+                        partStuck = Snippet.ClosestRagdollPartAroundItemOverlapSphere(itemLumiere, 0.2f);
+                        if (partStuck != null)
+                        {
+                            stickyJoint = new FixedJoint();
+                            stickyJoint = Snippet.CreateStickyJointBetweenTwoRigidBodies(itemLumiere.rb, partStuck.rb, stickyJoint);
+                            creatureStuck = partStuck.ragdoll.creature;
+                            creatureStuck.OnDespawnEvent += CreatureStuck_OnDespawnEvent;
+                            isStuck = true;
+                        }
+                    }
+                    if (isStuck)
+                    {
                         SetTKHandle(false);
+                        itemLumiere.rb.mass = 0f;
+                        itemLumiere.rb.drag = 0f;
+                        itemLumiere.rb.angularDrag = 0f;
                         foreach (CollisionHandler handler in itemLumiere.collisionHandlers)
                         {
-                            handler.SetPhysicModifier(this, 5, 0, 0, 0f, 0f);
+                            handler.SetPhysicModifier(this, 0f, 0f, 0f, 0f);
                         }
                         DisableCollision();
-                        isStuck = true;
                         if (lumiereController.data.holdingALightRightHand)
                         {
                             Player.local.creature.handRight.UnGrab(false);
@@ -107,7 +133,7 @@ namespace Lumiere
             }
             else
             {
-                if(isStuck && itemLumiere.handles.FirstOrDefault(handle => handle.data.disableTouch == false))
+                if (isStuck && itemLumiere.handles.FirstOrDefault(handle => handle.data.disableTouch == false))
                 {
                     SetTouchHandle(false);
                 }
@@ -123,14 +149,55 @@ namespace Lumiere
             }
         }
 
+        private void CreatureStuck_OnDespawnEvent(EventTime eventTime)
+        {
+            if (EventTime.OnStart == eventTime)
+            {
+                if (isStuck && partStuck != null)
+                {
+                    if (stickyJoint != null)
+                    {
+                        Destroy(stickyJoint);
+                    }
+                    SetTKHandle(true);
+                    isStuck = false;
+                    creatureStuck.OnDespawnEvent -= ItemStuck_OnDespawnEvent;
+                    creatureStuck = null;
+                }
+                itemLumiere.Despawn();
+            }
+        }
+
+        private void ItemStuck_OnDespawnEvent(EventTime eventTime)
+        {
+            if (EventTime.OnStart == eventTime)
+            {
+                if (isStuck && itemStuck != null)
+                {
+                    if (stickyJoint != null)
+                    {
+                        Destroy(stickyJoint);
+                    }
+                    SetTKHandle(true);
+                    isStuck = false;
+                    itemStuck.OnDespawnEvent -= ItemStuck_OnDespawnEvent;
+                    itemStuck = null;
+                }
+                itemLumiere.Despawn();
+            }
+        }
+
         /// <summary>
         /// When the light is dropped, make the item immobile on the air.
         /// </summary>
         private void ItemLumiere_OnTelekinesisReleaseEvent(Handle handle, SpellTelekinesis teleGrabber)
         {
+            itemLumiere.rb.mass = massOri;
+            itemLumiere.rb.drag = dragOri;
+            itemLumiere.rb.angularDrag = angularDragOri;
             foreach (CollisionHandler handler in itemLumiere.collisionHandlers)
             {
-                handler.SetPhysicModifier(this, 5, 0, 0, 1000f, 1000f);
+                handler.SetPhysicModifier(this, 0f, 0f, 1000f, 1000f);
             }
             itemLumiere.rb.velocity = vec3zero;
             itemLumiere.rb.angularVelocity = vec3zero;
@@ -162,9 +229,12 @@ namespace Lumiere
         {
             if (!isStuck)
             {
+                itemLumiere.rb.mass = massOri;
+                itemLumiere.rb.drag = dragOri;
+                itemLumiere.rb.angularDrag = angularDragOri;
                 foreach (CollisionHandler handler in itemLumiere.collisionHandlers)
                 {
-                    handler.SetPhysicModifier(this, 5, 0, 0, 1000f, 1000f);
+                    handler.SetPhysicModifier(this, 0f, 0f, 1000f, 1000f);
                 }
                 itemLumiere.rb.velocity = vec3zero;
                 itemLumiere.rb.angularVelocity = vec3zero;
@@ -185,7 +255,7 @@ namespace Lumiere
         /// </summary>
         private void ItemLumiere_OnGrabEvent(Handle handle, RagdollHand ragdollHand)
         {
-            if(isStuck)
+            if (isStuck)
             {
                 if (stickyJoint != null)
                 {
@@ -193,6 +263,7 @@ namespace Lumiere
                 }
                 SetTKHandle(true);
                 isStuck = false;
+                itemStuck = null;
             }
             foreach (CollisionHandler handler in itemLumiere.collisionHandlers)
             {

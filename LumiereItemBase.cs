@@ -14,6 +14,9 @@ namespace Lumiere
         protected Light light;
         protected bool disableMesh = false;
         public LumiereController lumiereController;
+        protected float massOri = 0f;
+        protected float dragOri = 0f;
+        protected float angularDragOri = 0f;
 
         public virtual void Awake()
         {
@@ -23,6 +26,9 @@ namespace Lumiere
             light.color = new Color(lumiereController.data.ColorRValueGetSet, lumiereController.data.ColorGValueGetSet, lumiereController.data.ColorBValueGetSet) / 255f;
             light.intensity = lumiereController.data.LightIntensityGetSet;
             light.range = lumiereController.data.LightRangeGetSet;
+            massOri = itemLumiere.rb.mass;
+            dragOri = itemLumiere.rb.drag;
+            angularDragOri = itemLumiere.rb.angularDrag;
         }
 
         public virtual void Update()

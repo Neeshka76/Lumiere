@@ -37,6 +37,8 @@ namespace Lumiere
         private Text txtNegColorValueR;
         private Text txtNegColorValueG;
         private Text txtNegColorValueB;
+        private Text txtStickToItemCreature;
+        private Button btnStickToItemCreature;
         private Slider sliderRedColor;
         private Slider sliderGreenColor;
         private Slider sliderBlueColor;
@@ -79,6 +81,8 @@ namespace Lumiere
             txtNegColorValueB = menu.GetCustomReference("txt_NegColorValueB").GetComponent<Text>();
             txtDisablePreviewAfterSpawn = menu.GetCustomReference("txt_DisablePreviewAfterSpawn").GetComponent<Text>();
             btnDisablePreviewAfterSpawn = menu.GetCustomReference("btn_DisablePreviewAfterSpawn").GetComponent<Button>();
+            txtStickToItemCreature = menu.GetCustomReference("txt_StickToItemCreature").GetComponent<Text>();
+            btnStickToItemCreature = menu.GetCustomReference("btn_StickToItemCreature").GetComponent<Button>();
             // Add an event listener for buttons
             btnColorValueR.onClick.AddListener(ClickColorRValue);
             btnColorValueG.onClick.AddListener(ClickColorGValue);
@@ -94,6 +98,7 @@ namespace Lumiere
             btnNegColorValueG.onClick.AddListener(ClickNegColorG);
             btnNegColorValueB.onClick.AddListener(ClickNegColorB);
             btnDisablePreviewAfterSpawn.onClick.AddListener(ClickDisablePreviewAfterSpawn);
+            btnStickToItemCreature.onClick.AddListener(ClickStickToItemOrCreature);
 
             // Initialization of sliders
             sliderDistancePreview.wholeNumbers = false;
@@ -137,6 +142,7 @@ namespace Lumiere
             lumiereController.data.NegColorGGetSet = true;
             lumiereController.data.NegColorBGetSet = true;
             lumiereController.data.DisablePreviewAfterSpawnGetSet = true;
+            lumiereController.data.StickToItemFalseCreatureTrueGetSet = false;
 
             lumiereHook = menu.gameObject.AddComponent<LumiereHook>();
             lumiereHook.menu = this;
@@ -284,6 +290,11 @@ namespace Lumiere
             lumiereController.data.DisablePreviewAfterSpawnGetSet ^= true;
             UpdateDataPageLeft1();
         }
+        public void ClickStickToItemOrCreature()
+        {
+            lumiereController.data.StickToItemFalseCreatureTrueGetSet ^= true;
+            UpdateDataPageLeft1();
+        }
 
         public void UpdateDataPageLeft1()
         {
@@ -349,6 +360,7 @@ namespace Lumiere
             txtPointToLights.text = lumiereController.data.PointToLightsGetSet ? "Enabled" : "Disabled";
             txtPreviewLight.text = lumiereController.data.PreviewLightGetSet ? "Enabled" : "Disabled";
             txtDisablePreviewAfterSpawn.text = lumiereController.data.DisablePreviewAfterSpawnGetSet ? "Enabled" : "Disabled";
+            txtStickToItemCreature.text = lumiereController.data.StickToItemFalseCreatureTrueGetSet ? "Creature" : "Item";
             txtStickyLights.text = lumiereController.data.IsStickyGetSet ? "Enabled" : "Disabled";
             txtNegColorValueR.text = lumiereController.data.NegColorRGetSet ? "+" : "-";
             txtNegColorValueG.text = lumiereController.data.NegColorGGetSet ? "+" : "-";

@@ -15,7 +15,7 @@ namespace Lumiere
             base.Awake();
             foreach (CollisionHandler handler in itemLumiere.collisionHandlers)
             {
-                handler.SetPhysicModifier(this, 5, 0, 0, 0, 0);
+                handler.SetPhysicModifier(this, 0f, 0f, 0f, 0f);
             }
             for (int i = itemLumiere.handles.Count() - 1; i >= 0; --i)
             {
