@@ -185,7 +185,7 @@ namespace Lumiere
             lumiereController.data.NegColorGGetSet = true;
             lumiereController.data.NegColorBGetSet = true;
             lumiereController.data.DisablePreviewAfterSpawnGetSet = true;
-            lumiereController.data.StickToItemFalseCreatureTrueGetSet = false;
+            lumiereController.data.StickToItemWhenFalseCreatureTrueGetSet = false;
             lumiereController.data.DisableHandlesGetSet = false;
 
             lumiereHook = menu.gameObject.AddComponent<LumiereHook>();
@@ -350,17 +350,12 @@ namespace Lumiere
             if (!lumiereController.data.SavePlusPressedGetSet)
             {
                 nbSaves = CheckSaves();
-                AddSaveButton(nbSaves + 1);
+                AddSaveButton(nbSaves + 1, true);
                 btnSavePlus.gameObject.SetActive(false);
                 lumiereController.data.SavePlusPressedGetSet = true;
                 lumiereController.data.ValueButtonSaveSelectedGetSet = 0;
             }
         }
-        /*  CHANGE THE WAY IT WORKS : 
-            FIRST, SAVE BUTTON NAME IS INDEPENDANT OF THE SAVE !!!!
-            => no link between the button and the number of save, if you keep pushing the +, you'll add button1,2,3 etc...(even if it's locked)
-            SECONDLY : CAN DO WHATEVER YOU WANT WITH THE SAVE SELECTION BUTTON
-        */
         public void ClickSave()
         {
             //lumiereController.data.SavePressedGetSet ^= true;
@@ -372,6 +367,7 @@ namespace Lumiere
                 {
                     btnSavePlus.gameObject.SetActive(true);
                     lumiereController.data.SavePlusPressedGetSet = false;
+                    btnSavesList[lumiereController.data.ValueButtonSaveSelectedGetSet - 1].gameObject.GetComponentInChildren<Outline>().effectColor = Color.white;
                     lumiereController.data.ValueButtonSaveSelectedGetSet = 0;
                 }
             }
@@ -387,17 +383,23 @@ namespace Lumiere
         }
         public void ClickDespawn()
         {
-            //lumiereController.data.DespawnPressedGetSet ^= true;
             LumiereLevelModule.DespawnAllLights();
         }
         public void ClickDelete()
         {
-            //lumiereController.data.DeletePressedGetSet ^= true;
             if (lumiereController.data.ValueButtonSaveSelectedGetSet != 0)
             {
-                LumiereLevelModule.DeleteDatas(lumiereController.data.ValueButtonSaveSelectedGetSet);
                 RemoveSaveButton(lumiereController.data.ValueButtonSaveSelectedGetSet);
-                LumiereLevelModule.SortDatas(lumiereController.data.ValueButtonSaveSelectedGetSet);
+                if (CheckSaves() >= lumiereController.data.ValueButtonSaveSelectedGetSet)
+                {
+                    LumiereLevelModule.DeleteDatas(lumiereController.data.ValueButtonSaveSelectedGetSet);
+                    LumiereLevelModule.SortDatas(lumiereController.data.ValueButtonSaveSelectedGetSet);
+                }
+                else
+                {
+                    btnSavePlus.gameObject.SetActive(true);
+                    lumiereController.data.SavePlusPressedGetSet = false;
+                }
                 lumiereController.data.ValueButtonSaveSelectedGetSet = 0;
             }
         }
@@ -466,7 +468,7 @@ namespace Lumiere
             txtPointToLights.text = lumiereController.data.PointToLightsGetSet ? "Enabled" : "Disabled";
             txtPreviewLight.text = lumiereController.data.PreviewLightGetSet ? "Enabled" : "Disabled";
             txtDisablePreviewAfterSpawn.text = lumiereController.data.DisablePreviewAfterSpawnGetSet ? "Enabled" : "Disabled";
-            txtStickToItemCreature.text = lumiereController.data.StickToItemFalseCreatureTrueGetSet ? "Creature" : "Item";
+            txtStickToItemCreature.text = lumiereController.data.StickToItemWhenFalseCreatureTrueGetSet ? "Creature" : "Item";
             txtStickyLights.text = lumiereController.data.IsStickyGetSet ? "Enabled" : "Disabled";
             txtNegColorValueR.text = lumiereController.data.NegColorRGetSet ? "+" : "-";
             txtNegColorValueG.text = lumiereController.data.NegColorGGetSet ? "+" : "-";
@@ -516,13 +518,15 @@ namespace Lumiere
             return paths.Count();
         }
 
-        public void AddSaveButton(int nbButton)
+        public void AddSaveButton(int nbButton, bool newSaveTrue = false)
         {
             GameObject button = handleButtonPrefab.WaitForCompletion();
             button = UnityEngine.Object.Instantiate(button);
             button.transform.SetParent(ObjSaves, false);
             button.name = buttonNameOri + nbButton;
             button.gameObject.GetComponentInChildren<Text>().text = "Save" + nbButton;
+            if (newSaveTrue)
+                button.gameObject.GetComponentInChildren<Outline>().effectColor = Color.red;
             Button newbuttonSave = button.GetComponent<Button>();
             newbuttonSave.onClick.AddListener(() =>
             {
@@ -535,14 +539,16 @@ namespace Lumiere
 
         public void RemoveSaveButton(int nbButton)
         {
+            Debug.Log($"Lumiere : Remove Save : {nbButton}");
+            Debug.Log($"Lumiere : Remove Save : {btnSavesList.Count}");
             for (int i = btnSavesList.Count - 1; i >= 0; i--)
             {
-                if (i == nbButton)
+                if (i == nbButton - 1)
                 {
                     UnityEngine.Object.Destroy(btnSavesList[i].gameObject);
                     btnSavesList.RemoveAt(i);
                 }
-                if (nbButton < i)
+                if (nbButton - 1 < i)
                 {
                     btnSavesList[i].gameObject.GetComponentInChildren<Text>().text = "Save" + (i);
                     btnSavesList[i].gameObject.name = buttonNameOri + i;

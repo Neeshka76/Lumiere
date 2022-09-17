@@ -22,6 +22,7 @@ namespace Lumiere
                 itemLumiere.handles[i].SetTelekinesis(false);
                 itemLumiere.handles[i].data.allowTelekinesis = false;
                 itemLumiere.handles[i].SetTouch(false);
+                itemLumiere.handles[i].data.disableTouch = true;
             }
             DisableCollision();
         }

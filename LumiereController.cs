@@ -45,7 +45,7 @@ namespace Lumiere
         public bool PointToLightsGetSet { get; set; }
         public bool PreviewLightGetSet { get; set; }
         public bool DisablePreviewAfterSpawnGetSet { get; set; }
-        public bool StickToItemFalseCreatureTrueGetSet { get; set; }
+        public bool StickToItemWhenFalseCreatureTrueGetSet { get; set; }
 
         public bool IsStickyGetSet { get; set; }
 

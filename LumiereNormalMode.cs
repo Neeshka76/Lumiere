@@ -99,7 +99,7 @@ namespace Lumiere
                 if (!isStuck && (lumiereController.data.holdingALightRightHand && Player.local.handRight.controlHand.castPressed && Player.local.handRight.controlHand.gripPressed ||
                                   lumiereController.data.holdingALightLeftHand && Player.local.handLeft.controlHand.castPressed && Player.local.handLeft.controlHand.gripPressed))
                 {
-                    if (!lumiereController.data.StickToItemFalseCreatureTrueGetSet)
+                    if (!lumiereController.data.StickToItemWhenFalseCreatureTrueGetSet)
                     {
                         itemStuck = Snippet.ClosestItemAroundItemOverlapSphere(itemLumiere, 0.2f);
                         if (itemStuck != itemLumiere)
@@ -168,13 +168,18 @@ namespace Lumiere
             {
                 if (itemLumiere.handles.FirstOrDefault(handle => handle.data.disableTouch == false))
                     SetTouchHandle(false);
-                if (itemLumiere.handles.FirstOrDefault(handle => handle.data.allowTelekinesis = true))
+                if (itemLumiere.handles.FirstOrDefault(handle => handle.data.allowTelekinesis == true))
                     SetTKHandle(false);
             }
             else
             {
-                if (!lumiereController.data.IsStickyGetSet && !isStuck && itemLumiere.handles.FirstOrDefault(handle => handle.data.allowTelekinesis = false))
-                    SetTKHandle(true);
+                if (!lumiereController.data.IsStickyGetSet && !isStuck)
+                {
+                    if (itemLumiere.handles.FirstOrDefault(handle => handle.data.disableTouch == true))
+                        SetTouchHandle(true);
+                    if (itemLumiere.handles.FirstOrDefault(handle => handle.data.allowTelekinesis == false))
+                        SetTKHandle(true);
+                }
             }
         }
 
