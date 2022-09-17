@@ -1,6 +1,12 @@
-﻿using ThunderRoad;
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using ThunderRoad;
 using UnityEngine;
+using UnityEngine.AddressableAssets;
 using UnityEngine.Events;
+using UnityEngine.ResourceManagement.AsyncOperations;
 using UnityEngine.UI;
 using Slider = UnityEngine.UI.Slider;
 
@@ -44,6 +50,25 @@ namespace Lumiere
         private Slider sliderBlueColor;
         public LumiereController lumiereController;
         public LumiereHook lumiereHook;
+
+        private Button btnSavePlus;
+        private Transform ObjSaves;
+        private Button btnSave;
+        private Button btnLoad;
+        private Button btnDespawn;
+        private Button btnDelete;
+        private Button btnDisableHandles;
+        private Text txtDisableHandles;
+        private Text txtSaveDescription;
+        private List<Button> btnSavesList = new List<Button>();
+        private string buttonNameOri = "btn_Save";
+        private bool saveRead = false;
+        private int nbSaves = 0;
+
+        private Dictionary<Button, string> ButtonTextKey = new Dictionary<Button, string>();
+
+        AsyncOperationHandle<GameObject> handleButtonPrefab = Addressables.LoadAssetAsync<GameObject>("Neeshka.Lumiere.ButtonPrefab");
+
         // Note on sliders : Put the listener after the initialization of the value !
         public override void Init(MenuData menuData, Menu menu)
         {
@@ -83,6 +108,15 @@ namespace Lumiere
             btnDisablePreviewAfterSpawn = menu.GetCustomReference("btn_DisablePreviewAfterSpawn").GetComponent<Button>();
             txtStickToItemCreature = menu.GetCustomReference("txt_StickToItemCreature").GetComponent<Text>();
             btnStickToItemCreature = menu.GetCustomReference("btn_StickToItemCreature").GetComponent<Button>();
+            btnSavePlus = menu.GetCustomReference("btn_SavePlus").GetComponent<Button>();
+            ObjSaves = menu.GetCustomReference("ObjSaves");
+            btnSave = menu.GetCustomReference("btn_Save").GetComponent<Button>();
+            btnLoad = menu.GetCustomReference("btn_Load").GetComponent<Button>();
+            btnDespawn = menu.GetCustomReference("btn_Despawn").GetComponent<Button>();
+            btnDelete = menu.GetCustomReference("btn_Delete").GetComponent<Button>();
+            txtSaveDescription = menu.GetCustomReference("txt_SaveDescription").GetComponent<Text>();
+            btnDisableHandles = menu.GetCustomReference("btn_DisableHandles").GetComponent<Button>();
+            txtDisableHandles = btnDisableHandles.gameObject.GetComponentInChildren<Text>();
             // Add an event listener for buttons
             btnColorValueR.onClick.AddListener(ClickColorRValue);
             btnColorValueG.onClick.AddListener(ClickColorGValue);
@@ -99,6 +133,15 @@ namespace Lumiere
             btnNegColorValueB.onClick.AddListener(ClickNegColorB);
             btnDisablePreviewAfterSpawn.onClick.AddListener(ClickDisablePreviewAfterSpawn);
             btnStickToItemCreature.onClick.AddListener(ClickStickToItemOrCreature);
+            btnDisableHandles.onClick.AddListener(ClickDisableHandles);
+
+            btnSavePlus.onClick.AddListener(ClickSavePlus);
+            btnSave.onClick.AddListener(ClickSave);
+            btnLoad.onClick.AddListener(ClickLoad);
+            btnDespawn.onClick.AddListener(ClickDespawn);
+            btnDelete.onClick.AddListener(ClickDelete);
+
+
 
             // Initialization of sliders
             sliderDistancePreview.wholeNumbers = false;
@@ -124,7 +167,7 @@ namespace Lumiere
             sliderBlueColor.onValueChanged.AddListener(delegate { ValueChangedSliderBlueColor(); });
 
             // Initialization of datas
-            
+
 
             lumiereController = GameManager.local.gameObject.AddComponent<LumiereController>();
             lumiereController.data.ColorRValueGetSet = 255f;
@@ -143,6 +186,7 @@ namespace Lumiere
             lumiereController.data.NegColorBGetSet = true;
             lumiereController.data.DisablePreviewAfterSpawnGetSet = true;
             lumiereController.data.StickToItemFalseCreatureTrueGetSet = false;
+            lumiereController.data.DisableHandlesGetSet = false;
 
             lumiereHook = menu.gameObject.AddComponent<LumiereHook>();
             lumiereHook.menu = this;
@@ -194,7 +238,7 @@ namespace Lumiere
             lumiereController.data.DisableMeshRendererGetSet ^= true;
             UpdateDataPageLeft1();
         }
-        
+
         public void ClickPointToLights()
         {
             lumiereController.data.PointToLightsGetSet ^= true;
@@ -236,7 +280,7 @@ namespace Lumiere
         public void ClickNegColorR()
         {
             lumiereController.data.NegColorRGetSet ^= true;
-            if(lumiereController.data.NegColorRGetSet)
+            if (lumiereController.data.NegColorRGetSet)
             {
                 sliderRedColor.minValue = 0f;
                 sliderRedColor.maxValue = 255f;
@@ -292,8 +336,70 @@ namespace Lumiere
         }
         public void ClickStickToItemOrCreature()
         {
-            lumiereController.data.StickToItemFalseCreatureTrueGetSet ^= true;
+            //lumiereController.data.StickToItemFalseCreatureTrueGetSet ^= true;
             UpdateDataPageLeft1();
+        }
+
+        public void ClickDisableHandles()
+        {
+            lumiereController.data.DisableHandlesGetSet ^= true;
+        }
+
+        public void ClickSavePlus()
+        {
+            if (!lumiereController.data.SavePlusPressedGetSet)
+            {
+                nbSaves = CheckSaves();
+                AddSaveButton(nbSaves + 1);
+                btnSavePlus.gameObject.SetActive(false);
+                lumiereController.data.SavePlusPressedGetSet = true;
+                lumiereController.data.ValueButtonSaveSelectedGetSet = 0;
+            }
+        }
+        /*  CHANGE THE WAY IT WORKS : 
+            FIRST, SAVE BUTTON NAME IS INDEPENDANT OF THE SAVE !!!!
+            => no link between the button and the number of save, if you keep pushing the +, you'll add button1,2,3 etc...(even if it's locked)
+            SECONDLY : CAN DO WHATEVER YOU WANT WITH THE SAVE SELECTION BUTTON
+        */
+        public void ClickSave()
+        {
+            //lumiereController.data.SavePressedGetSet ^= true;
+            if (lumiereController.data.ValueButtonSaveSelectedGetSet != 0)
+            {
+                LumiereLevelModule.SaveDatas(lumiereController.data.ValueButtonSaveSelectedGetSet);
+                lumiereController.data.nbLightInLevel = LumiereLevelModule.returnNbLightInLevel();
+                if (lumiereController.data.nbLightInLevel != 0)
+                {
+                    btnSavePlus.gameObject.SetActive(true);
+                    lumiereController.data.SavePlusPressedGetSet = false;
+                    lumiereController.data.ValueButtonSaveSelectedGetSet = 0;
+                }
+            }
+        }
+        public void ClickLoad()
+        {
+            lumiereController.data.LoadPressedGetSet ^= true;
+            if (lumiereController.data.ValueButtonSaveSelectedGetSet != 0)
+            {
+                LumiereLevelModule.LoadDatas(lumiereController.data.ValueButtonSaveSelectedGetSet);
+                lumiereController.data.ValueButtonSaveSelectedGetSet = 0;
+            }
+        }
+        public void ClickDespawn()
+        {
+            //lumiereController.data.DespawnPressedGetSet ^= true;
+            LumiereLevelModule.DespawnAllLights();
+        }
+        public void ClickDelete()
+        {
+            //lumiereController.data.DeletePressedGetSet ^= true;
+            if (lumiereController.data.ValueButtonSaveSelectedGetSet != 0)
+            {
+                LumiereLevelModule.DeleteDatas(lumiereController.data.ValueButtonSaveSelectedGetSet);
+                RemoveSaveButton(lumiereController.data.ValueButtonSaveSelectedGetSet);
+                LumiereLevelModule.SortDatas(lumiereController.data.ValueButtonSaveSelectedGetSet);
+                lumiereController.data.ValueButtonSaveSelectedGetSet = 0;
+            }
         }
 
         public void UpdateDataPageLeft1()
@@ -367,10 +473,82 @@ namespace Lumiere
             txtNegColorValueB.text = lumiereController.data.NegColorBGetSet ? "+" : "-";
         }
 
-        /*public void UpdateDataPageRight1()
+        public void UpdateDataPageRight1()
         {
-            
-        }*/
+            if (lumiereController != null)
+            {
+                if (lumiereController.data.levelLoadedGetSet && !saveRead)
+                {
+                    nbSaves = CheckSaves();
+                    for (int i = 1; i <= nbSaves; i++)
+                    {
+                        AddSaveButton(i);
+                    }
+                    saveRead = true;
+                }
+                if (!lumiereController.data.levelLoadedGetSet && saveRead)
+                {
+                    for (int i = btnSavesList.Count - 1; i >= 0; i--)
+                    {
+                        UnityEngine.Object.Destroy(btnSavesList[i].gameObject);
+                        btnSavesList.RemoveAt(i);
+                    }
+                    lumiereController.data.ValueButtonSaveSelectedGetSet = 0;
+                    saveRead = false;
+                }
+            }
+            if (lumiereController.data.ValueButtonSaveSelectedGetSet == 0)
+                txtSaveDescription.text = "Save Description";
+            txtDisableHandles.text = lumiereController.data.DisableHandlesGetSet ? "Disabled" : "Enabled";
+        }
+
+        private int CheckSaves()
+        {
+            string pathToFolder = Environment.CurrentDirectory + "\\BladeAndSorcery_Data\\StreamingAssets\\Mods\\Lumiere\\Saves";
+            string title = lumiereController.data.levelNameGetSet;
+            HashSet<string> paths = Directory.EnumerateFiles(pathToFolder, title + "*.json").ToHashSet();
+            if (!Directory.Exists(pathToFolder))
+            {
+                if (!Directory.Exists(pathToFolder))
+                    Debug.Log($"Lumiere : No folder at : {pathToFolder}");
+                return 0;
+            }
+            return paths.Count();
+        }
+
+        public void AddSaveButton(int nbButton)
+        {
+            GameObject button = handleButtonPrefab.WaitForCompletion();
+            button = UnityEngine.Object.Instantiate(button);
+            button.transform.SetParent(ObjSaves, false);
+            button.name = buttonNameOri + nbButton;
+            button.gameObject.GetComponentInChildren<Text>().text = "Save" + nbButton;
+            Button newbuttonSave = button.GetComponent<Button>();
+            newbuttonSave.onClick.AddListener(() =>
+            {
+                lumiereController.data.ValueButtonSaveSelectedGetSet = int.Parse(newbuttonSave.gameObject.name.Substring(buttonNameOri.Length));
+                txtSaveDescription.text = "Save " + lumiereController.data.ValueButtonSaveSelectedGetSet;
+            });
+            btnSavesList.Add(newbuttonSave);
+            btnSavePlus.transform.SetAsLastSibling();
+        }
+
+        public void RemoveSaveButton(int nbButton)
+        {
+            for (int i = btnSavesList.Count - 1; i >= 0; i--)
+            {
+                if (i == nbButton)
+                {
+                    UnityEngine.Object.Destroy(btnSavesList[i].gameObject);
+                    btnSavesList.RemoveAt(i);
+                }
+                if (nbButton < i)
+                {
+                    btnSavesList[i].gameObject.GetComponentInChildren<Text>().text = "Save" + (i);
+                    btnSavesList[i].gameObject.name = buttonNameOri + i;
+                }
+            }
+        }
 
     }
 
@@ -382,7 +560,7 @@ namespace Lumiere
         void Update()
         {
             menu.UpdateDataPageLeft1();
-            //menu.UpdateDataPageRight1();
+            menu.UpdateDataPageRight1();
         }
     }
 }

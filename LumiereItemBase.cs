@@ -11,7 +11,7 @@ namespace Lumiere
     public class LumiereItemBase : MonoBehaviour
     {
         public Item itemLumiere { get; protected set; }
-        protected Light light;
+        public Light light;
         protected bool disableMesh = false;
         public LumiereController lumiereController;
         protected float massOri = 0f;
@@ -23,12 +23,25 @@ namespace Lumiere
             itemLumiere = GetComponent<Item>();
             lumiereController = GameManager.local.gameObject.GetComponent<LumiereController>();
             light = itemLumiere.gameObject.GetComponentInChildren<Light>();
-            light.color = new Color(lumiereController.data.ColorRValueGetSet, lumiereController.data.ColorGValueGetSet, lumiereController.data.ColorBValueGetSet) / 255f;
-            light.intensity = lumiereController.data.LightIntensityGetSet;
-            light.range = lumiereController.data.LightRangeGetSet;
             massOri = itemLumiere.rb.mass;
             dragOri = itemLumiere.rb.drag;
             angularDragOri = itemLumiere.rb.angularDrag;
+        }
+
+        public virtual void Init(bool useBook = true, LumiereSaveData saveData = null)
+        {
+            if(useBook)
+            {
+                light.color = new Color(lumiereController.data.ColorRValueGetSet, lumiereController.data.ColorGValueGetSet, lumiereController.data.ColorBValueGetSet) / 255f;
+                light.intensity = lumiereController.data.LightIntensityGetSet;
+                light.range = lumiereController.data.LightRangeGetSet;
+            }
+            else
+            {
+                light.color = saveData.color;
+                light.intensity = saveData.intensity;
+                light.range = saveData.range;
+            }
         }
 
         public virtual void Update()

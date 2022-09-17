@@ -31,8 +31,25 @@ namespace Lumiere
             itemLumiere.OnTelekinesisGrabEvent += ItemLumiere_OnTelekinesisGrabEvent;
             itemLumiere.OnTelekinesisReleaseEvent += ItemLumiere_OnTelekinesisReleaseEvent;
             itemLumiere.data.flyFromThrow = false;
-            Player.local.creature.handRight.UnGrab(false);
-            Player.local.creature.handRight.Grab(itemLumiere.GetMainHandle(Side.Right), true);
+        }
+
+        public override void Init(bool useBook = true, LumiereSaveData saveData = null)
+        {
+            base.Init(useBook, saveData);
+
+            if (useBook)
+            {
+                if (Player.local.creature.handRight.grabbedHandle != null)
+                    Player.local.creature.handRight.UnGrab(false);
+                Player.local.creature.handRight.Grab(itemLumiere.GetMainHandle(Side.Right), true);
+            }
+            else
+            {
+                itemLumiere.transform.position = saveData.position;
+                itemLumiere.transform.rotation = saveData.rotation;
+                FreezeLight();
+                DisableCollision();
+            }
         }
 
         public override void Update()
@@ -126,7 +143,7 @@ namespace Lumiere
                         }
                     }
                 }
-                if (isStuck && itemLumiere.handles.FirstOrDefault(handle => handle.data.disableTouch == true))
+                if (isStuck && itemLumiere.handles.FirstOrDefault(handle => handle.data.disableTouch == true) && !lumiereController.data.DisableHandlesGetSet)
                 {
                     SetTouchHandle(true);
                 }
@@ -147,6 +164,18 @@ namespace Lumiere
             {
                 Player.local.creature.handRight.Grab(itemLumiere.GetMainHandle(Side.Right), true);
             }
+            if (lumiereController.data.DisableHandlesGetSet)
+            {
+                if (itemLumiere.handles.FirstOrDefault(handle => handle.data.disableTouch == false))
+                    SetTouchHandle(false);
+                if (itemLumiere.handles.FirstOrDefault(handle => handle.data.allowTelekinesis = true))
+                    SetTKHandle(false);
+            }
+            else
+            {
+                if (!lumiereController.data.IsStickyGetSet && !isStuck && itemLumiere.handles.FirstOrDefault(handle => handle.data.allowTelekinesis = false))
+                    SetTKHandle(true);
+            }
         }
 
         private void CreatureStuck_OnDespawnEvent(EventTime eventTime)
@@ -161,7 +190,7 @@ namespace Lumiere
                     }
                     SetTKHandle(true);
                     isStuck = false;
-                    creatureStuck.OnDespawnEvent -= ItemStuck_OnDespawnEvent;
+                    creatureStuck.OnDespawnEvent -= CreatureStuck_OnDespawnEvent;
                     creatureStuck = null;
                 }
                 itemLumiere.Despawn();
@@ -192,15 +221,7 @@ namespace Lumiere
         /// </summary>
         private void ItemLumiere_OnTelekinesisReleaseEvent(Handle handle, SpellTelekinesis teleGrabber)
         {
-            itemLumiere.rb.mass = massOri;
-            itemLumiere.rb.drag = dragOri;
-            itemLumiere.rb.angularDrag = angularDragOri;
-            foreach (CollisionHandler handler in itemLumiere.collisionHandlers)
-            {
-                handler.SetPhysicModifier(this, 0f, 0f, 1000f, 1000f);
-            }
-            itemLumiere.rb.velocity = vec3zero;
-            itemLumiere.rb.angularVelocity = vec3zero;
+            FreezeLight();
             DisableCollision();
             telegrabLeft = false;
             telegrabRight = false;
@@ -211,11 +232,7 @@ namespace Lumiere
         /// </summary>
         private void ItemLumiere_OnTelekinesisGrabEvent(Handle handle, SpellTelekinesis teleGrabber)
         {
-            foreach (CollisionHandler handler in itemLumiere.collisionHandlers)
-            {
-                handler.RemovePhysicModifier(this);
-            }
-            EnableCollision();
+            FreezeLight(false);
             if (teleGrabber.spellCaster.ragdollHand.side == Side.Left)
                 telegrabLeft = true;
             if (teleGrabber.spellCaster.ragdollHand.side == Side.Right)
@@ -229,15 +246,7 @@ namespace Lumiere
         {
             if (!isStuck)
             {
-                itemLumiere.rb.mass = massOri;
-                itemLumiere.rb.drag = dragOri;
-                itemLumiere.rb.angularDrag = angularDragOri;
-                foreach (CollisionHandler handler in itemLumiere.collisionHandlers)
-                {
-                    handler.SetPhysicModifier(this, 0f, 0f, 1000f, 1000f);
-                }
-                itemLumiere.rb.velocity = vec3zero;
-                itemLumiere.rb.angularVelocity = vec3zero;
+                FreezeLight();
             }
             if (ragdollHand.side == Side.Right)
             {
@@ -265,10 +274,7 @@ namespace Lumiere
                 isStuck = false;
                 itemStuck = null;
             }
-            foreach (CollisionHandler handler in itemLumiere.collisionHandlers)
-            {
-                handler.RemovePhysicModifier(this);
-            }
+            FreezeLight(false);
             if (ragdollHand.side == Side.Right)
             {
                 lumiereController.data.holdingALightRightHand = true;
@@ -277,7 +283,6 @@ namespace Lumiere
             {
                 lumiereController.data.holdingALightLeftHand = true;
             }
-            EnableCollision();
         }
         private void OnDisable()
         {
@@ -316,6 +321,30 @@ namespace Lumiere
             {
                 itemLumiere.handles[i].SetTouch(active);
                 itemLumiere.handles[i].data.disableTouch = !active;
+            }
+        }
+
+        private void FreezeLight(bool enable = true)
+        {
+            if (enable)
+            {
+                itemLumiere.rb.mass = massOri;
+                itemLumiere.rb.drag = dragOri;
+                itemLumiere.rb.angularDrag = angularDragOri;
+                foreach (CollisionHandler handler in itemLumiere.collisionHandlers)
+                {
+                    handler.SetPhysicModifier(this, 0f, 0f, 1000f, 1000f);
+                }
+                itemLumiere.rb.velocity = vec3zero;
+                itemLumiere.rb.angularVelocity = vec3zero;
+            }
+            else
+            {
+                foreach (CollisionHandler handler in itemLumiere.collisionHandlers)
+                {
+                    handler.RemovePhysicModifier(this);
+                }
+                EnableCollision();
             }
         }
     }

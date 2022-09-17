@@ -49,6 +49,8 @@ namespace Lumiere
 
         public bool IsStickyGetSet { get; set; }
 
+        public bool DisableHandlesGetSet { get; set; }
+
         // Set if Keyboard has pressed enter button finish
         public bool KeyboardFinishEnterButtonPressedGetSet { get; set; }
         // Set if the value to assign is a int
@@ -63,6 +65,15 @@ namespace Lumiere
         public int ValueToAssignedIntGetSet { get; set; }
         // Value to pass from the Keyboard in float
         public float ValueToAssignedFloatGetSet { get; set; }
+        public bool SavePlusPressedGetSet { get; set; }
+        public bool SavePressedGetSet { get; set; }
+        public bool LoadPressedGetSet { get; set; }
+        public bool DespawnPressedGetSet { get; set; }
+        public bool DeletePressedGetSet { get; set; }
+        public int ValueButtonSaveSelectedGetSet { get; set; }
+        public string levelNameGetSet { get; set; }
+        public bool levelLoadedGetSet { get; set; }
+        public int nbLightInLevel { get; set; }
     }
     public class LumiereController : MonoBehaviour
     {
