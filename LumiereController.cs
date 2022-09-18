@@ -74,6 +74,7 @@ namespace Lumiere
         public string levelNameGetSet { get; set; }
         public bool levelLoadedGetSet { get; set; }
         public int nbLightInLevel { get; set; }
+        public int ValueButtonColorSelectedGetSet { get; set; }
     }
     public class LumiereController : MonoBehaviour
     {

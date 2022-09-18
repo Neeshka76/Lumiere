@@ -65,7 +65,8 @@ namespace Lumiere
         private bool saveRead = false;
         private int nbSaves = 0;
 
-        private Dictionary<Button, string> ButtonTextKey = new Dictionary<Button, string>();
+        private Transform ObjLightPositiveColors;
+        private Transform ObjLightNegativeColors;
 
         AsyncOperationHandle<GameObject> handleButtonPrefab = Addressables.LoadAssetAsync<GameObject>("Neeshka.Lumiere.ButtonPrefab");
 
@@ -117,8 +118,12 @@ namespace Lumiere
             txtSaveDescription = menu.GetCustomReference("txt_SaveDescription").GetComponent<Text>();
             btnDisableHandles = menu.GetCustomReference("btn_DisableHandles").GetComponent<Button>();
             txtDisableHandles = btnDisableHandles.gameObject.GetComponentInChildren<Text>();
-            // Add an event listener for buttons
-            btnColorValueR.onClick.AddListener(ClickColorRValue);
+
+            ObjLightPositiveColors = menu.GetCustomReference("ObjLightPositiveColors");
+            ObjLightNegativeColors = menu.GetCustomReference("ObjLightNegativeColors");
+
+        // Add an event listener for buttons
+        btnColorValueR.onClick.AddListener(ClickColorRValue);
             btnColorValueG.onClick.AddListener(ClickColorGValue);
             btnColorValueB.onClick.AddListener(ClickColorBValue);
             btnLightIntensity.onClick.AddListener(ClickLightIntensity);
@@ -190,6 +195,12 @@ namespace Lumiere
 
             lumiereHook = menu.gameObject.AddComponent<LumiereHook>();
             lumiereHook.menu = this;
+
+            for(int i = 1; i <= Enum.GetNames(typeof(LumiereColor.LightPositiveColors)).Length ; i++)
+            {
+                AddColorButton(i);
+                AddColorButton(i, false);
+            }
 
             // Update all the Data for left page (text, visibility of buttons etc...)
             UpdateDataPageLeft1();
@@ -554,6 +565,65 @@ namespace Lumiere
                     btnSavesList[i].gameObject.name = buttonNameOri + i;
                 }
             }
+        }
+
+        public void AddColorButton(int nbButton, bool positiveColor = true)
+        {
+            GameObject button = handleButtonPrefab.WaitForCompletion();
+            button = UnityEngine.Object.Instantiate(button);
+            if (positiveColor)
+            {
+                button.transform.SetParent(ObjLightPositiveColors, false);
+            }
+            else
+            {
+                button.transform.SetParent(ObjLightNegativeColors, false);
+            }
+            button.name = buttonNameOri + nbButton;
+            string text = Enum.GetName(typeof(LumiereColor.LightPositiveColors), nbButton);
+            button.gameObject.GetComponentInChildren<Text>().text = text;
+            Button newbuttonColor = button.GetComponent<Button>();
+            newbuttonColor.onClick.AddListener(() =>
+            {
+                LumiereColorButton colorButton = new LumiereColorButton((LumiereColor.LightPositiveColors)Enum.Parse(typeof(LumiereColor.LightPositiveColors), text), positiveColor);
+                if(positiveColor)
+                {
+                    if (!lumiereController.data.NegColorRGetSet || !lumiereController.data.NegColorGGetSet || !lumiereController.data.NegColorBGetSet)
+                    {
+                        sliderRedColor.minValue = 0f;
+                        sliderRedColor.maxValue = 255f;
+                        sliderGreenColor.minValue = 0f;
+                        sliderGreenColor.maxValue = 255f;
+                        sliderBlueColor.minValue = 0f;
+                        sliderBlueColor.maxValue = 255f;
+                        lumiereController.data.NegColorRGetSet = true;
+                        lumiereController.data.NegColorGGetSet = true;
+                        lumiereController.data.NegColorBGetSet = true;
+                    }
+                }
+                else
+                {
+                    if (lumiereController.data.NegColorRGetSet || lumiereController.data.NegColorGGetSet || lumiereController.data.NegColorBGetSet)
+                    {
+                        sliderRedColor.minValue = -255f;
+                        sliderRedColor.maxValue = 0f;
+                        sliderGreenColor.minValue = -255f;
+                        sliderGreenColor.maxValue = 0f;
+                        sliderBlueColor.minValue = -255f;
+                        sliderBlueColor.maxValue = 0f;
+                        lumiereController.data.NegColorRGetSet = false;
+                        lumiereController.data.NegColorGGetSet = false;
+                        lumiereController.data.NegColorBGetSet = false;
+                    }
+                }
+                sliderRedColor.value = colorButton.RValue();
+                sliderGreenColor.value = colorButton.GValue();
+                sliderBlueColor.value = colorButton.BValue();
+                lumiereController.data.ColorRValueGetSet = colorButton.RValue();
+                lumiereController.data.ColorGValueGetSet = colorButton.GValue();
+                lumiereController.data.ColorBValueGetSet = colorButton.BValue();
+
+            });
         }
 
     }

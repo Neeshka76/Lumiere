@@ -140,6 +140,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="KeyboardLevelModule.cs" />
+    <Compile Include="LumiereColor.cs" />
+    <Compile Include="LumiereColorButton.cs" />
     <Compile Include="LumiereController.cs" />
     <Compile Include="LumiereItemBase.cs" />
     <Compile Include="LumiereLevelModule.cs" />
