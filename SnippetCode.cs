@@ -2,8 +2,10 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using ThunderRoad;
 using UnityEngine;
+using UnityEngine.Rendering;
 using Random = UnityEngine.Random;
 
 
@@ -84,6 +86,7 @@ public static class Snippet
     /// <param name="direction">Cone direction</param>
     /// <param name="maxDistance">Maximum cone distance</param>
     /// <param name="coneAngle">Cone angle</param>
+    /// <param name="layer">Layer of detection</param>
     public static RaycastHit[] ConeCastAll(this Vector3 origin, float maxRadius, Vector3 direction, float maxDistance, float coneAngle, int layer = Physics.DefaultRaycastLayers)
     {
         RaycastHit[] sphereCastHits = Physics.SphereCastAll(origin, maxRadius, direction, maxDistance, layer, QueryTriggerInteraction.Ignore);
@@ -217,13 +220,29 @@ public static class Snippet
     public static Vector3 back = Vector3.back;
     public static Vector3 left = Vector3.left;
     public static Vector3 down = Vector3.down;
-
+    /// <summary>
+    /// Return if X is the bigger value or not
+    /// </summary>
+    /// <param name="vec">Vector3 to check</param>
+    /// <returns></returns>
     public static bool XBigger(this Vector3 vec) => Mathf.Abs(vec.x) > Mathf.Abs(vec.y) && Mathf.Abs(vec.x) > Mathf.Abs(vec.z);
-
+    /// <summary>
+    /// Return if Y is the bigger value or not
+    /// </summary>
+    /// <param name="vec">Vector3 to check</param>
+    /// <returns></returns>
     public static bool YBigger(this Vector3 vec) => Mathf.Abs(vec.y) > Mathf.Abs(vec.x) && Mathf.Abs(vec.y) > Mathf.Abs(vec.z);
-
+    /// <summary>
+    /// Return if Z is the bigger value or not
+    /// </summary>
+    /// <param name="vec">Vector3 to check</param>
+    /// <returns></returns>
     public static bool ZBigger(this Vector3 vec) => Mathf.Abs(vec.z) > Mathf.Abs(vec.x) && Mathf.Abs(vec.z) > Mathf.Abs(vec.y);
-
+    /// <summary>
+    /// Return the velocity of the hand
+    /// </summary>
+    /// <param name="hand">Hand to check</param>
+    /// <returns></returns>
     public static Vector3 Velocity(this RagdollHand hand) => Player.local.transform.rotation * hand.playerHand.controlHand.GetHandVelocity();
 
     /// <summary>
@@ -231,8 +250,17 @@ public static class Snippet
     /// </summary>
     public static IEnumerable<TOut> SelectNotNull<TIn, TOut>(this IEnumerable<TIn> enumerable, Func<TIn, TOut> func)
         => enumerable.Where(item => func(item) != null).Select(func);
-
+    /// <summary>
+    /// Return if the part is from the player
+    /// </summary>
+    /// <param name="part">Part to check</param>
+    /// <returns></returns>
     public static bool IsPlayer(this RagdollPart part) => part?.ragdoll?.creature.isPlayer == true;
+    /// <summary>
+    /// Return if the part is hands, feet, head or torso
+    /// </summary>
+    /// <param name="part">Part to check</param>
+    /// <returns></returns>
     public static bool IsImportant(this RagdollPart part)
     {
         var type = part.type;
@@ -258,9 +286,22 @@ public static class Snippet
     /// Get a creature's torso
     /// </summary>
     public static RagdollPart GetTorso(this Creature creature) => creature.GetPart(RagdollPart.Type.Torso);
-
+    /// <summary>
+    /// Return the chest position of the creature
+    /// </summary>
+    /// <param name="creature">Creature to return the chest</param>
+    /// <returns></returns>
     public static Vector3 GetChest(this Creature creature) => Vector3.Lerp(creature.GetTorso().transform.position,
         creature.GetHead().transform.position, 0.5f);
+    /// <summary>
+    /// Return a IEnumerable of Creatures that are in the radius
+    /// </summary>
+    /// <param name="position">Position to check from</param>
+    /// <param name="radius">Radius of the check</param>
+    /// <param name="targetAliveCreature">Target Alive creatures</param>
+    /// <param name="targetDeadCreature">Target Dead creatures</param>
+    /// <param name="targetPlayer">Target the player</param>
+    /// <returns></returns>
     public static IEnumerable<Creature> CreaturesInRadius(this Vector3 position, float radius, bool targetAliveCreature = true, bool targetDeadCreature = false, bool targetPlayer = false)
     {
         List<Creature> creatureDetected = new List<Creature>();
@@ -274,7 +315,17 @@ public static class Snippet
         }
         return creatureDetected;
     }
-
+    /// <summary>
+    /// Return a IEnumerable of Creatures that are in the radius of the cone
+    /// </summary>
+    /// <param name="position">Position to check from</param>
+    /// <param name="radius">Radius of the check</param>
+    /// <param name="directionOfCone">Direction of the center of the cone</param>
+    /// <param name="angleOfCone">Spread angle of the cone</param>
+    /// <param name="targetAliveCreature">Target Alive creatures</param>
+    /// <param name="targetDeadCreature">Target Dead creatures</param>
+    /// <param name="targetPlayer">Target the player</param>
+    /// <returns></returns>
     public static IEnumerable<Creature> CreaturesInConeRadius(this Vector3 position, float radius, Vector3 directionOfCone, float angleOfCone, bool targetAliveCreature = true, bool targetDeadCreature = false, bool targetPlayer = false)
     {
         List<Creature> creatureDetected = new List<Creature>();
@@ -289,14 +340,24 @@ public static class Snippet
         }
         return creatureDetected.ToList();
     }
-
+    /// <summary>
+    /// Return a random creature inside a radius
+    /// </summary>
+    /// <param name="position">Position to check from</param>
+    /// <param name="radius">Radius of the check</param>
+    /// <param name="targetAliveCreature">Target Alive creatures</param>
+    /// <param name="targetDeadCreature">Target Dead creatures</param>
+    /// <param name="targetPlayer">Target the player</param>
+    /// <param name="creatureToExclude">Creature to exclude in the check</param>
+    /// <param name="includeCreatureExcludedIfDefault">Return the excluded creature in case there's no creatures</param>
+    /// <returns></returns>
     public static Creature RandomCreatureInRadius(this Vector3 position, float radius, bool targetAliveCreature = true, bool targetDeadCreature = false, bool targetPlayer = false, Creature creatureToExclude = null, bool includeCreatureExcludedIfDefault = false)
     {
         List<Creature> creatureDetected = new List<Creature>();
 
         for (int i = Creature.allActive.Count - 1; i >= 0; i--)
         {
-            if (Creature.allActive[i] != creatureToExclude && !includeCreatureExcludedIfDefault
+            if ((includeCreatureExcludedIfDefault || !includeCreatureExcludedIfDefault && Creature.allActive[i] != creatureToExclude)
         && ((Creature.allActive[i].GetChest() - position).sqrMagnitude < radius * radius)
         && (targetAliveCreature ? true : Creature.allActive[i].state == Creature.State.Dead)
         && (targetDeadCreature ? true : Creature.allActive[i].state != Creature.State.Dead)
@@ -305,17 +366,25 @@ public static class Snippet
                 creatureDetected.Add(Creature.allActive[i]);
             }
         }
-
-        if (creatureDetected.Count() != 0)
+        if (creatureDetected.Count != 0)
         {
-            return creatureDetected[Random.Range(0, creatureDetected.Count())];
+            return creatureDetected[Random.Range(0, creatureDetected.Count)];
         }
         else
         {
-            return creatureDetected[0];
+            return null;
         }
     }
-
+    /// <summary>
+    /// Return the closest creature inside a radius
+    /// </summary>
+    /// <param name="position">Position to check from</param>
+    /// <param name="radius">Radius of the check</param>
+    /// <param name="targetAliveCreature">Target Alive creatures</param>
+    /// <param name="targetDeadCreature">Target Dead creatures</param>
+    /// <param name="targetPlayer">Target the player</param>
+    /// <param name="creatureToExclude">Creature to exclude in the check</param>
+    /// <returns></returns>
     public static Creature ClosestCreatureInRadius(this Vector3 position, float radius, bool targetAliveCreature = true, bool targetDeadCreature = false, bool targetPlayer = false, Creature creatureToExclude = null)
     {
         List<Creature> creatureDetected = new List<Creature>();
@@ -348,7 +417,148 @@ public static class Snippet
             return null;
         }
     }
-
+    /// <summary>
+    /// Return the closest creature inside a cone radius
+    /// </summary>
+    /// <param name="position">Position to check from</param>
+    /// <param name="radius">Radius of the check</param>
+    /// <param name="directionOfCone">Direction of the center of the cone</param>
+    /// <param name="angleOfCone">Spread angle of the cone</param>
+    /// <param name="targetAliveCreature">Target Alive creatures</param>
+    /// <param name="targetDeadCreature">Target Dead creatures</param>
+    /// <param name="targetPlayer">Target the player</param>
+    /// <param name="creatureToExclude">Creature to exclude in the check</param>
+    /// <returns></returns>
+    public static Creature ClosestCreatureInConeRadius(this Vector3 position, float radius, Vector3 directionOfCone, float angleOfCone, bool targetAliveCreature = true, bool targetDeadCreature = false, bool targetPlayer = false, Creature creatureToExclude = null)
+    {
+        List<Creature> creatureDetected = new List<Creature>();
+        for (int i = Creature.allActive.Count - 1; i >= 0; i--)
+        {
+            if (Creature.allActive[i] != creatureToExclude && ((Creature.allActive[i].GetChest() - position).sqrMagnitude < radius * radius)
+        && (targetAliveCreature ? true : Creature.allActive[i].state == Creature.State.Dead)
+        && (targetDeadCreature ? true : Creature.allActive[i].state != Creature.State.Dead)
+        && (targetPlayer ? true : !Creature.allActive[i].isPlayer)
+        && (Vector3.Angle(Creature.allActive[i].transform.position - position, directionOfCone) <= (angleOfCone / 2f)))
+                creatureDetected.Add(Creature.allActive[i]);
+        }
+        if (creatureDetected != null)
+        {
+            float lastRadius = Mathf.Infinity;
+            float thisRadius;
+            Creature lastCreature = null;
+            foreach (Creature creature in creatureDetected)
+            {
+                thisRadius = (position - creature.transform.position).sqrMagnitude;
+                if (thisRadius <= lastRadius * lastRadius)
+                {
+                    lastRadius = thisRadius;
+                    lastCreature = creature;
+                }
+            }
+            return lastCreature;
+        }
+        else
+        {
+            return null;
+        }
+    }
+    /// <summary>
+    /// Return the farest creature inside a cone radius
+    /// </summary>
+    /// <param name="position">Position to check from</param>
+    /// <param name="radius">Radius of the check</param>
+    /// <param name="directionOfCone">Direction of the center of the cone</param>
+    /// <param name="angleOfCone">Spread angle of the cone</param>
+    /// <param name="targetAliveCreature">Target Alive creatures</param>
+    /// <param name="targetDeadCreature">Target Dead creatures</param>
+    /// <param name="targetPlayer">Target the player</param>
+    /// <param name="creatureToExclude">Creature to exclude in the check</param>
+    /// <returns></returns>
+    public static Creature FarestCreatureInConeRadius(this Vector3 position, float radius, Vector3 directionOfCone, float angleOfCone, bool targetAliveCreature = true, bool targetDeadCreature = false, bool targetPlayer = false, Creature creatureToExclude = null)
+    {
+        List<Creature> creatureDetected = new List<Creature>();
+        for (int i = Creature.allActive.Count - 1; i >= 0; i--)
+        {
+            if (Creature.allActive[i] != creatureToExclude && ((Creature.allActive[i].GetChest() - position).sqrMagnitude < radius * radius)
+        && (targetAliveCreature ? true : Creature.allActive[i].state == Creature.State.Dead)
+        && (targetDeadCreature ? true : Creature.allActive[i].state != Creature.State.Dead)
+        && (targetPlayer ? true : !Creature.allActive[i].isPlayer)
+        && (Vector3.Angle(Creature.allActive[i].transform.position - position, directionOfCone) <= (angleOfCone / 2f)))
+                creatureDetected.Add(Creature.allActive[i]);
+        }
+        if (creatureDetected != null)
+        {
+            float lastRadius = 0f;
+            float thisRadius;
+            Creature lastCreature = null;
+            foreach (Creature creature in creatureDetected)
+            {
+                thisRadius = (position - creature.transform.position).sqrMagnitude;
+                if (thisRadius >= lastRadius * lastRadius)
+                {
+                    lastRadius = thisRadius;
+                    lastCreature = creature;
+                }
+            }
+            return lastCreature;
+        }
+        else
+        {
+            return null;
+        }
+    }
+    /// <summary>
+    /// Return the most centered creature inside a cone radius
+    /// </summary>
+    /// <param name="position">Position to check from</param>
+    /// <param name="radius">Radius of the check</param>
+    /// <param name="directionOfCone">Direction of the center of the cone</param>
+    /// <param name="angleOfCone">Spread angle of the cone</param>
+    /// <param name="targetAliveCreature">Target Alive creatures</param>
+    /// <param name="targetDeadCreature">Target Dead creatures</param>
+    /// <param name="targetPlayer">Target the player</param>
+    /// <param name="creatureToExclude">Creature to exclude in the check</param>
+    /// <returns></returns>
+    public static Creature CenteredCreatureInConeRadius(this Vector3 position, float radius, Vector3 directionOfCone, float angleOfCone, bool targetAliveCreature = true, bool targetDeadCreature = false, bool targetPlayer = false, Creature creatureToExclude = null)
+    {
+        List<Creature> creatureDetected = new List<Creature>();
+        for (int i = Creature.allActive.Count - 1; i >= 0; i--)
+        {
+            if (Creature.allActive[i] != creatureToExclude && ((Creature.allActive[i].GetChest() - position).sqrMagnitude < radius * radius)
+        && (targetAliveCreature ? true : Creature.allActive[i].state == Creature.State.Dead)
+        && (targetDeadCreature ? true : Creature.allActive[i].state != Creature.State.Dead)
+        && (targetPlayer ? true : !Creature.allActive[i].isPlayer)
+        && (Vector3.Angle(Creature.allActive[i].transform.position - position, directionOfCone) <= (angleOfCone / 2f)))
+                creatureDetected.Add(Creature.allActive[i]);
+        }
+        if (creatureDetected != null)
+        {
+            float lastAngle = Mathf.Infinity;
+            float thisAngle;
+            Creature lastCreature = null;
+            foreach (Creature creature in creatureDetected)
+            {
+                Vector3 directionTowardT = creature.transform.position - position;
+                thisAngle = Vector3.Angle(directionTowardT, directionOfCone);
+                if (thisAngle <= lastAngle * lastAngle)
+                {
+                    lastAngle = thisAngle;
+                    lastCreature = creature;
+                }
+            }
+            return lastCreature;
+        }
+        else
+        {
+            return null;
+        }
+    }
+    /// <summary>
+    /// Return the closest creature from a list from a position
+    /// </summary>
+    /// <param name="creatures">List of Creatures</param>
+    /// <param name="position">Position to check from</param>
+    /// <returns></returns>
     public static Creature ClosestCreatureInListFromPosition(this List<Creature> creatures, Vector3 position)
     {
         float lastRadius = Mathf.Infinity;
@@ -365,6 +575,12 @@ public static class Snippet
         }
         return lastCreature;
     }
+    /// <summary>
+    /// Return the farest creature from a list from a position
+    /// </summary>
+    /// <param name="creatures">List of Creatures</param>
+    /// <param name="position">Position to check from</param>
+    /// <returns></returns>
     public static Creature FarestCreatureInListFromPosition(this List<Creature> creatures, Vector3 position)
     {
         float lastRadius = 0f;
@@ -381,7 +597,10 @@ public static class Snippet
         }
         return lastCreature;
     }
-
+    /// <summary>
+    /// Depenetrate the target item
+    /// </summary>
+    /// <param name="item">Item to depenetrate</param>
     public static void Depenetrate(this Item item)
     {
         foreach (var handler in item.collisionHandlers)
@@ -396,7 +615,7 @@ public static class Snippet
     /// Get a creature's random part
     /// </summary>
     /// <param name="creature">Creature where the part need to be targeted</param>
-    /// <param name="mask">Mask Apply (write it in binary : 0b11111111111) : 1 means get the part, 0 means don't get the part : in the order of the bit from left to right : 
+    /// <param name="mask">Mask Apply (write it in binary : 0b00011111111111) : 1 means get the part, 0 means don't get the part : in the order of the bit from left to right : 
     /// Tail, RightWing, LeftWing, RightFoot, LeftFoot, RightLeg, LeftLeg, RightHand, LeftHand, RightArm, LeftArm, Torso, Neck, Head</param>
     public static RagdollPart GetRandomRagdollPart(this Creature creature, int mask = 0b00011111111111)
     {
@@ -406,15 +625,19 @@ public static class Snippet
             if ((mask & (int)part.type) > 0)
                 ragdollParts.Add(part);
         }
-        return ragdollParts[Random.Range(0, ragdollParts.Count())];
+        return ragdollParts[Random.Range(0, ragdollParts.Count)];
 
         /*for(int i = creature.ragdoll.parts.Count - 1; i >= 0; i--)
         {
             if (!((mask & (int)creature.ragdoll.parts[i].type) > 0))
                 creature.ragdoll.parts.RemoveAt(i);
         }
-        return creature.ragdoll.parts[Random.Range(0, creature.ragdoll.parts.Count())];*/
+        return creature.ragdoll.parts[Random.Range(0, creature.ragdoll.parts.Count)];*/
     }
+    /// <summary>
+    /// Return if a wave has started or not
+    /// </summary>
+    /// <returns></returns>
     public static bool returnWaveStarted()
     {
         int nbWaveStarted = 0;
@@ -475,17 +698,43 @@ public static class Snippet
             return default;
         return enumerable.Aggregate((curMin, x) => (curMin == null || (comparator(x).CompareTo(comparator(curMin)) < 0)) ? x : curMin);
     }
-
+    /// <summary>
+    /// Rotate the circle
+    /// </summary>
+    /// <param name="origin">Origin of the circle</param>
+    /// <param name="forwardDirection">Forward direction of the circle (axis of rotation)</param>
+    /// <param name="upDirection">Up direction of the circle (must be perpendicular to the forwardDirection)</param>
+    /// <param name="radius">Radius from the center of the circle</param>
+    /// <param name="speed">Speed factor</param>
+    /// <param name="nbElementsAroundCircle">number of element around the circle</param>
+    /// <param name="i">index of the element</param>
+    /// <returns></returns>
     public static Vector3 RotateCircle(this Vector3 origin, Vector3 forwardDirection, Vector3 upDirection, float radius, float speed, int nbElementsAroundCircle, int i)
     {
         return origin + Quaternion.AngleAxis(i * 360f / nbElementsAroundCircle + speed, forwardDirection) * upDirection * radius;
     }
-
+    /// <summary>
+    /// Create the circle
+    /// </summary>
+    /// <param name="origin">Origin of the circle</param>
+    /// <param name="forwardDirection">Forward direction of the circle (axis of rotation)</param>
+    /// <param name="upDirection">Up direction of the circle (must be perpendicular to the forwardDirection)</param>
+    /// <param name="radius">Radius from the center of the circle</param>
+    /// <param name="nbElementsAroundCircle">number of element around the circle</param>
+    /// <param name="i">index of the element</param>
+    /// <returns></returns>
     public static Vector3 PosAroundCircle(this Vector3 origin, Vector3 forwardDirection, Vector3 upDirection, float radius, int nbElementsAroundCircle, int i)
     {
         return origin + Quaternion.AngleAxis(i * 360f / nbElementsAroundCircle, forwardDirection) * upDirection * radius;
     }
-
+    /// <summary>
+    /// Create a simple joint (Configurable)
+    /// </summary>
+    /// <param name="source">Source rigidbody</param>
+    /// <param name="target">Target rigidbody</param>
+    /// <param name="spring">Spring value</param>
+    /// <param name="damper">Damper value</param>
+    /// <returns></returns>
     public static ConfigurableJoint CreateSimpleJoint(Rigidbody source, Rigidbody target, float spring, float damper)
     {
         Quaternion orgRotation = source.transform.rotation;
@@ -523,7 +772,14 @@ public static class Snippet
         joint.zMotion = ConfigurableJointMotion.Free;
         return joint;
     }
-
+    /// <summary>
+    /// Create a Configurable joint : slingshot (lock some axis)
+    /// </summary>
+    /// <param name="source">Source rigidbody</param>
+    /// <param name="target">Target rigidbody</param>
+    /// <param name="spring">Spring value</param>
+    /// <param name="damper">Damper value</param>
+    /// <returns></returns>
     public static ConfigurableJoint CreateSlingshotJoint(Rigidbody source, Rigidbody target, float spring, float damper)
     {
         Quaternion orgRotation = source.transform.rotation;
@@ -571,7 +827,14 @@ public static class Snippet
         joint.massScale = 15f;
         return joint;
     }
-
+    /// <summary>
+    /// Create a Configurable joint (that is strong) that can be with limit axis motion
+    /// </summary>
+    /// <param name="source">Source rigidbody</param>
+    /// <param name="target">Target rigidbody</param>
+    /// <param name="massScale">Mass scaling, the bigger the less the target rigidbody will matter</param>
+    /// <param name="limitMotion">Limit the motion</param>
+    /// <returns></returns>
     public static ConfigurableJoint StrongJointFixed(Rigidbody source, Rigidbody target, float massScale = 30f, bool limitMotion = false)
     {
         ConfigurableJoint joint;
@@ -622,7 +885,13 @@ public static class Snippet
 
         return joint;
     }
-
+    /// <summary>
+    /// Create a Configurable joint that attract ragdollParts to an item
+    /// </summary>
+    /// <param name="projectile">Source item</param>
+    /// <param name="attractedRagdollPart">Target RagdollPart</param>
+    /// <param name="joint">Joint that will be returned</param>
+    /// <returns></returns>
     public static ConfigurableJoint CreateJointToProjectileForCreatureAttraction(this Item projectile, RagdollPart attractedRagdollPart, ConfigurableJoint joint)
     {
         JointDrive jointDrive = new JointDrive();
@@ -655,12 +924,18 @@ public static class Snippet
         joint.connectedMassScale = 0.00001f;
         return joint;
     }
-
-    public static FixedJoint CreateStickyJointBetweenTwoRigidBodies(this Rigidbody connectedRB, Rigidbody targetRB, FixedJoint joint)
+    /// <summary>
+    /// Create a Fixed joint (sticky joint)
+    /// </summary>
+    /// <param name="source">Source rigidbody</param>
+    /// <param name="target">Target rigidbody</param>
+    /// <returns></returns>
+    public static FixedJoint CreateStickyJointBetweenTwoRigidBodies(this Rigidbody source, Rigidbody target)
     {
-        joint = targetRB.gameObject.AddComponent<FixedJoint>();
+        FixedJoint joint;
+        joint = target.gameObject.AddComponent<FixedJoint>();
         joint.anchor = Vector3.zero;
-        joint.connectedBody = connectedRB;
+        joint.connectedBody = source;
         joint.connectedAnchor = Vector3.zero;
         joint.massScale = 0.00001f;
         joint.connectedMassScale = 10000f;
@@ -668,7 +943,30 @@ public static class Snippet
         joint.breakTorque = Mathf.Infinity;
         return joint;
     }
-
+    /// <summary>
+    /// Create a Spring joint that is a bit like a Yoyo
+    /// </summary>
+    /// <param name="hand">Source hand</param>
+    /// <param name="itemRB">Target rigidbody</param>
+    /// <param name="joint">Joint that will be returned</param>
+    /// <param name="distance">Max distance of the joint</param>
+    /// <returns></returns>
+    public static SpringJoint YoyoJoint(RagdollHand hand, Rigidbody itemRB, SpringJoint joint, float distance)
+    {
+        joint = itemRB.GetComponent<Item>().gameObject.AddComponent<SpringJoint>();
+        joint.connectedBody = hand.rb;
+        joint.autoConfigureConnectedAnchor = false;
+        joint.anchor = Vector3.zero;
+        joint.connectedAnchor = Vector3.zero;
+        joint.maxDistance = distance;
+        joint.spring = 1000f;
+        joint.tolerance = 0.1f;
+        return joint;
+    }
+    /// <summary>
+    /// Destroy the Joint
+    /// </summary>
+    /// <param name="rb">Rigidbody where the joint is attached</param>
     public static void DestroyJoint(this Rigidbody rb)
     {
         if (rb.gameObject.GetComponent<ConfigurableJoint>())
@@ -688,7 +986,12 @@ public static class Snippet
             UnityEngine.Object.Destroy(rb.gameObject.GetComponent<HingeJoint>());
         }
     }
-
+    /// <summary>
+    /// Ignore/Activate the collider between a ragdoll and a collider
+    /// </summary>
+    /// <param name="ragdoll">Ragdoll to ignore</param>
+    /// <param name="collider">Collider to ignore</param>
+    /// <param name="ignore">Ignore or not</param>
     public static void IgnoreCollider(this Ragdoll ragdoll, Collider collider, bool ignore = true)
     {
         foreach (RagdollPart part in ragdoll.parts)
@@ -696,7 +999,12 @@ public static class Snippet
             part.IgnoreCollider(collider, ignore);
         }
     }
-
+    /// <summary>
+    /// Ignore/Activate the collider between a ragdollPart and a collider
+    /// </summary>
+    /// <param name="part">RagdollPart to ignore</param>
+    /// <param name="collider">Collider to ignore</param>
+    /// <param name="ignore">Ignore or not</param>
     public static void IgnoreCollider(this RagdollPart part, Collider collider, bool ignore = true)
     {
         foreach (Collider itemCollider in part.colliderGroup.colliders)
@@ -704,7 +1012,12 @@ public static class Snippet
             Physics.IgnoreCollision(collider, itemCollider, ignore);
         }
     }
-
+    /// <summary>
+    /// Ignore/Activate the collider between an item and a collider
+    /// </summary>
+    /// <param name="item">Item to ignore</param>
+    /// <param name="collider">Collider to ignore</param>
+    /// <param name="ignore">Ignore or not</param>
     public static void IgnoreCollider(this Item item, Collider collider, bool ignore)
     {
         foreach (ColliderGroup cg in item.colliderGroups)
@@ -715,7 +1028,12 @@ public static class Snippet
             }
         }
     }
-
+    /// <summary>
+    /// Ignore/Activate the collider between two items
+    /// </summary>
+    /// <param name="item">Item 1 to ignore</param>
+    /// <param name="itemIgnored">Item 2 to ignore</param>
+    /// <param name="ignore">Ignore or not</param>
     public static void IgnoreColliderBetweenItem(this Item item, Item itemIgnored, bool ignore = true)
     {
         foreach (ColliderGroup colliderGroup1 in item.colliderGroups)
@@ -739,7 +1057,11 @@ public static class Snippet
         }
     }
 
-
+    /// <summary>
+    /// Ignore the collision between an item and a Creature + item they are holding
+    /// </summary>
+    /// <param name="item">Item to ignore</param>
+    /// <param name="creature">Creature to ignore</param>
     public static void addIgnoreRagdollAndItemHoldingCollision(Item item, Creature creature)
     {
         foreach (ColliderGroup colliderGroup in item.colliderGroups)
@@ -819,17 +1141,40 @@ public static class Snippet
                 creature.GetPart(RagdollPart.Type.RightFoot)};
         return ragdollPartsimportant;
     }
-
+    /// <summary>
+    /// Give a random position around the creature with an offset and a radius (not vertically)
+    /// </summary>
+    /// <param name="creature"></param>
+    /// <param name="offset"></param>
+    /// <param name="radius"></param>
+    /// <returns></returns>
     public static Vector3 RandomPositionAroundCreatureInRadius(this Creature creature, Vector3 offset, float radius)
     {
         return creature.transform.position + offset + new Vector3(Random.Range(-radius, radius), 0, Random.Range(-radius, radius));
     }
-
+    /// <summary>
+    /// Return a position from a position and an angle and a distance.
+    /// </summary>
+    /// <param name="position"></param>
+    /// <param name="angle"></param>
+    /// <param name="axis"></param>
+    /// <param name="upDir"></param>
+    /// <param name="distance"></param>
+    /// <returns></returns>
     public static Vector3 CalculatePositionFromAngleWithDistance(this Vector3 position, float angle, Vector3 axis, Vector3 upDir, float distance)
     {
         return position + Quaternion.AngleAxis(angle, axis) * upDir * distance;
     }
-
+    /// <summary>
+    /// Return the position of from a position and an angle and a distance.
+    /// </summary>
+    /// <param name="creature"></param>
+    /// <param name="offset"></param>
+    /// <param name="radius"></param>
+    /// <param name="maxAngle"></param>
+    /// <param name="direction"></param>
+    /// <param name="distance"></param>
+    /// <returns></returns>
     public static Vector3 RandomPositionAroundCreatureInRadiusAngle(this Creature creature, Vector3 offset, float radius, float maxAngle, Vector3 direction, float distance)
     {
         return GetHead(creature).transform.position + offset + Quaternion.AngleAxis(Random.Range(-maxAngle, maxAngle), creature.transform.up) * direction * Random.Range(0f, radius) * distance;
@@ -885,32 +1230,54 @@ public static class Snippet
     }
 
 
-    private static IEnumerable<GameObject> GetGameObjectsChildrenOfGameObject(this GameObject gameObject, bool allInactive = true)
+    public static IEnumerable<GameObject> GetGameObjectsChildrenOfGameObject(this GameObject gameObject, bool allInactive = true, bool deepLevels = false)
     {
         List<GameObject> gameObjects = new List<GameObject>();
-        for (int i = 0; i < gameObject.transform.childCount; i++)
+        if (deepLevels)
         {
-            // Grab only the actives
-            if (gameObject.transform.GetChild(i).gameObject.activeSelf || allInactive)
+            List<Transform> transforms = gameObject.GetComponentsInChildren<Transform>().ToList();
+            foreach (Transform t in transforms)
             {
-                gameObjects.Add(gameObject.transform.GetChild(i).gameObject);
+                gameObjects.Add(t.gameObject);
+            }
+        }
+        else
+        {
+            for (int i = 0; i < gameObject.transform.childCount; i++)
+            {
+                // Grab only the actives
+                if (gameObject.transform.GetChild(i).gameObject.activeSelf || allInactive)
+                {
+                    gameObjects.Add(gameObject.transform.GetChild(i).gameObject);
+                }
             }
         }
         return gameObjects;
     }
 
 
-    public static void listAllGameObjectsChildrenOfGameObject(this GameObject gameObject, bool allInactive = true)
+    public static void listAllGameObjectsChildrenOfGameObjectAndComponents(this GameObject gameObject, bool allInactive = true, bool deepLevels = false)
     {
         int i = 0;
-        foreach (GameObject go in GetGameObjectsChildrenOfGameObject(gameObject, allInactive))
+        foreach (GameObject go in GetGameObjectsChildrenOfGameObject(gameObject, allInactive, deepLevels))
         {
-            Debug.Log($"Gameobject {i} {go.name} of parent : {gameObject.name}");
+            Debug.Log($"Gameobject {i} : {go.name} of parent : {gameObject.name}; Type : {gameObject.GetType()}");
+            listAllComponentsOfGameObject(go);
             i++;
         }
     }
 
-    private static IEnumerable<Component> GetComponentsOfGameObject(this GameObject gameObject, bool allInactive)
+    public static void listAllGameObjectsChildrenOfGameObject(this GameObject gameObject, bool allInactive = true, bool deepLevels = false)
+    {
+        int i = 0;
+        foreach (GameObject go in GetGameObjectsChildrenOfGameObject(gameObject, allInactive, deepLevels))
+        {
+            Debug.Log($"Gameobject {i} : {go.name} of parent : {gameObject.name}; Type {gameObject.GetType()}");
+            i++;
+        }
+    }
+
+    private static IEnumerable<Component> GetComponentsOfGameObject(this GameObject gameObject, bool allInactive, bool deepLevels = false)
     {
         return allInactive ? gameObject.GetComponents(typeof(Component)) : gameObject.GetComponents(typeof(Component)).Where(component => component.gameObject.activeSelf);
     }
@@ -920,12 +1287,12 @@ public static class Snippet
         int i = 0;
         foreach (Component component in GetComponentsOfGameObject(gameObject, allInactive))
         {
-            Debug.Log($"Component {i} of {component.name}; Type : {component.GetType()}");
+            Debug.Log($"Gameobject {gameObject.name} : Component {i} of {component.name}; Type : {component.GetType()}");
             i++;
         }
     }
 
-    public static void listAllComponentsOfGameObjects()
+    public static void listAllComponentsOfGameObjectsAndAllGameObjects()
     {
         List<GameObject> GOList = GameObject.FindObjectsOfType<GameObject>().ToList();
         foreach (GameObject gameObject in GOList)
@@ -934,6 +1301,32 @@ public static class Snippet
             Debug.Log($"Gameobject Tag : {gameObject.tag}");
             listAllComponentsOfGameObject(gameObject);
         }
+    }
+
+    public static GameObject AddZoneToGameObject(this Transform transform, float radius, bool useDebug = false)
+    {
+        GameObject zone;
+        zone = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+        zone.GetComponent<Collider>().isTrigger = true;
+        //Vector3 endPoint = FindEndPoint();
+        //Ray ray = new Ray(transform.position, endPoint - transform.position);
+        //float distanceHit = Vector3.Distance(transform.position, endPoint);
+        zone.transform.SetParent(transform);
+        zone.transform.localRotation = Quaternion.FromToRotation(Vector3.up, Vector3.forward);
+        zone.transform.localPosition = Vector3.zero;
+        //zoneDoT.transform.localScale = new Vector3(radiusOfDetection, distanceHit / 2, radiusOfDetection);
+        zone.transform.localScale = new Vector3(radius, radius, radius);
+        zone.gameObject.layer = GameManager.GetLayer(LayerName.ItemAndRagdollOnly);
+        zone.GetComponent<MeshRenderer>().material = new Material(Shader.Find("Sprites/Default"));
+        zone.GetComponent<MeshRenderer>().material.color = Color.blue;
+        zone.GetComponent<MeshRenderer>().shadowCastingMode = ShadowCastingMode.Off;
+        zone.GetComponent<MeshRenderer>().forceRenderingOff = !useDebug;
+        return zone;
+    }
+
+    public static IEnumerable<GameObject> listAllGameObject()
+    {
+        return GameObject.FindObjectsOfType<GameObject>();
     }
 
     // Need to find a solution for that
@@ -1020,7 +1413,7 @@ public static class Snippet
     public static IEnumerable<Item> ItemsInRadiusAroundItem(this Vector3 position, Item thisItem, float radius)
     {
         List<Item> list = new List<Item>();
-        for (int i = Item.allActive.Count() - 1; i >= 0; i--)
+        for (int i = Item.allActive.Count - 1; i >= 0; i--)
         {
             if (((Item.allActive[i].transform.position - position).sqrMagnitude < radius * radius) && !thisItem)
                 list.Add(Item.allActive[i]);
@@ -1069,6 +1462,167 @@ public static class Snippet
         return itemsList;
     }
 
+    // GOOD VERSION !
+    public static Item ClosestItemInConeRadius(this Vector3 position, float radius, Vector3 directionOfCone, float angleOfCone, bool ignoreFlyingItem = true, bool ignoreThrownItem = true, Item itemToExclude = null)
+    {
+        Collider[] colliders = Physics.OverlapSphere(position, radius, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore);
+        List<Item> itemsList = new List<Item>();
+        foreach (Collider collider in colliders)
+        {
+            if (collider.attachedRigidbody?.GetComponent<CollisionHandler>()?.item is Item item)
+            {
+                Vector3 directionTowardT = item.transform.position - position;
+                float angleFromConeCenter = Vector3.Angle(directionTowardT, directionOfCone);
+                if (!itemsList.Contains(item)
+                && (ignoreFlyingItem ? true : item.isFlying)
+                && (ignoreThrownItem ? true : item.isThrowed)
+                && (item != itemToExclude) && angleFromConeCenter <= (angleOfCone / 2f))
+                {
+                    itemsList.Add(item);
+                }
+            }
+        }
+        if (itemsList != null)
+        {
+            float lastRadius = Mathf.Infinity;
+            float thisRadius;
+            Item lastItem = null;
+            foreach (Item item in itemsList)
+            {
+                thisRadius = (position - item.transform.position).sqrMagnitude;
+                if (thisRadius <= lastRadius * lastRadius)
+                {
+                    lastRadius = thisRadius;
+                    lastItem = item;
+                }
+            }
+            return lastItem;
+        }
+        else
+        {
+            return null;
+        }
+    }
+
+    public static Item CenteredItemInConeRadius(this Vector3 position, float radius, Vector3 directionOfCone, float angleOfCone, bool ignoreFlyingItem = true, bool ignoreThrownItem = true, bool ignoreKinematicItem = true, bool ignoreHand = true, Item itemToExclude = null)
+    {
+        Collider[] colliders = Physics.OverlapSphere(position, radius, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore);
+        List<Item> itemsList = new List<Item>();
+        foreach (Collider collider in colliders)
+        {
+            if (collider.attachedRigidbody?.GetComponent<CollisionHandler>()?.item is Item item)
+            {
+                Vector3 directionTowardT = item.transform.position - position;
+                float angleFromConeCenter = Vector3.Angle(directionTowardT, directionOfCone);
+                if (!itemsList.Contains(item)
+                && (ignoreFlyingItem ? true : item.isFlying)
+                && (ignoreThrownItem ? true : item.isThrowed)
+                && (ignoreKinematicItem ? !item.rb.isKinematic : true)
+                && (ignoreHand ? !item.mainHandler : true)
+                && (item != itemToExclude) && angleFromConeCenter <= (angleOfCone / 2f))
+                {
+                    itemsList.Add(item);
+                }
+            }
+        }
+        if (itemsList != null)
+        {
+            float lastAngle = Mathf.Infinity;
+            float thisAngle;
+            Item lastItem = null;
+            foreach (Item item in itemsList)
+            {
+                Vector3 directionTowardT = item.transform.position - position;
+                thisAngle = Vector3.Angle(directionTowardT, directionOfCone);
+                if (thisAngle <= lastAngle * lastAngle)
+                {
+                    lastAngle = thisAngle;
+                    lastItem = item;
+                }
+            }
+            return lastItem;
+        }
+        else
+        {
+            return null;
+        }
+    }
+
+    public static Item ClosestItemInListFromPosition(this List<Item> items, Vector3 position)
+    {
+        float lastRadius = Mathf.Infinity;
+        float thisRadius;
+        Item lastItem = null;
+        foreach (Item item in items)
+        {
+            thisRadius = (position - item.transform.position).sqrMagnitude;
+            if (thisRadius <= lastRadius * lastRadius)
+            {
+                lastRadius = thisRadius;
+                lastItem = item;
+            }
+        }
+        return lastItem;
+    }
+
+    public static Item FarestItemInListFromPosition(this List<Item> items, Vector3 position)
+    {
+        float lastRadius = 0f;
+        float thisRadius;
+        Item lastItem = null;
+        foreach (Item item in items)
+        {
+            thisRadius = (position - item.transform.position).sqrMagnitude;
+            if (thisRadius >= lastRadius * lastRadius)
+            {
+                lastRadius = thisRadius;
+                lastItem = item;
+            }
+        }
+        return lastItem;
+    }
+
+    public static Item FarestItemInConeRadius(this Vector3 position, float radius, Vector3 directionOfCone, float angleOfCone, bool targetFlyingItem = true, bool targetThrownItem = true, Item itemToExclude = null)
+    {
+        Collider[] colliders = Physics.OverlapSphere(position, radius, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore);
+        List<Item> itemsList = new List<Item>();
+        foreach (Collider collider in colliders)
+        {
+            if (collider.attachedRigidbody?.GetComponent<CollisionHandler>()?.item is Item item)
+            {
+                Vector3 directionTowardT = item.transform.position - position;
+                float angleFromConeCenter = Vector3.Angle(directionTowardT, directionOfCone);
+                if (!itemsList.Contains(item)
+                && (targetFlyingItem ? item.isFlying : true)
+                && (targetThrownItem ? item.isThrowed : true)
+                && (item != itemToExclude) && angleFromConeCenter <= (angleOfCone / 2f))
+                {
+                    itemsList.Add(item);
+                }
+            }
+        }
+        if (itemsList != null)
+        {
+            float lastRadius = 0f;
+            float thisRadius;
+            Item lastItem = null;
+            foreach (Item item in itemsList)
+            {
+                thisRadius = (position - item.transform.position).sqrMagnitude;
+                if (thisRadius >= lastRadius * lastRadius)
+                {
+                    lastRadius = thisRadius;
+                    lastItem = item;
+                }
+            }
+            return lastItem;
+        }
+        else
+        {
+            return null;
+        }
+    }
+
     public static Item ClosestItemAroundItem(this Item thisItem, float radius)
     {
         float lastRadius = Mathf.Infinity;
@@ -1100,7 +1654,7 @@ public static class Snippet
         {
             if (collider.attachedRigidbody?.GetComponent<CollisionHandler>()?.item is Item item)
             {
-                if(item != thisItem)
+                if (item != thisItem)
                 {
                     thisRadius = (collider.ClosestPoint(thisItem.transform.position) - thisItem.transform.position).sqrMagnitude;
                     if (thisRadius < radius * radius && thisRadius < lastRadius)
@@ -1127,10 +1681,19 @@ public static class Snippet
         float lastRadius = Mathf.Infinity;
         Collider lastCollider = null;
         float thisRadius;
-        List<Collider> colliders = Physics.OverlapSphere(thisItem.transform.position, radius, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore)
-            .Distinct().Where(coll => coll.attachedRigidbody?.GetComponent<CollisionHandler>()?.ragdollPart != null && targetPlayer ? true : !Player.local.creature.ragdoll.parts.Contains(coll.attachedRigidbody?.GetComponent<CollisionHandler>()?.ragdollPart)).ToList();
+        Collider[] colliders = Physics.OverlapSphere(thisItem.transform.position, radius, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore);
         foreach (Collider collider in colliders)
         {
+            if (collider.attachedRigidbody == null)
+                continue;
+            CollisionHandler component = collider.attachedRigidbody.GetComponent<CollisionHandler>();
+            if (component == null)
+                continue;
+            if (!component.isRagdollPart)
+                continue;
+            if (!targetPlayer)
+                if (Player.local.creature.ragdoll.parts.Contains(component.ragdollPart))
+                    continue;
             thisRadius = (collider.ClosestPoint(thisItem.transform.position) - thisItem.transform.position).sqrMagnitude;
             if (thisRadius < radius * radius && thisRadius < lastRadius)
             {
@@ -1138,7 +1701,7 @@ public static class Snippet
                 lastCollider = collider;
             }
         }
-        if (lastCollider?.attachedRigidbody?.GetComponent<CollisionHandler>().ragdollPart == null)
+        if (lastCollider == null)
         {
             return null;
         }
@@ -1151,12 +1714,12 @@ public static class Snippet
     /// <summary>
     /// Get the closestRagdollPart of a creature
     /// </summary>
-    /// <param name="origin">Origin position</param>
     /// <param name="creature">Creature where the part need to be targeted</param>
-    /// <param name="mask">Mask Apply (write it in binary : 0b11111111111) : 1 means get the part, 0 means don't get the part : in the order of the bit from left to right : 
+    /// <param name="origin">Origin position</param>
+    /// <param name="mask">Mask Apply (write it in binary : 0b00011111111111) : 1 means get the part, 0 means don't get the part : in the order of the bit from left to right : 
     /// Tail, RightWing, LeftWing, RightFoot, LeftFoot, RightLeg, LeftLeg, RightHand, LeftHand, RightArm, LeftArm, Torso, Neck, Head</param>
     /// <param name="partToExclude">Part to exclude in case it's the same part (for random case)</param>
-    public static RagdollPart ClosestRagdollPart(this Vector3 origin, Creature creature, int mask = 0b11111111111111, RagdollPart partToExclude = null)
+    public static RagdollPart ClosestRagdollPart(this Creature creature, Vector3 origin, int mask = 0b00011111111111, RagdollPart partToExclude = null)
     {
         float lastRadius = Mathf.Infinity;
         float thisRadius;
@@ -1181,10 +1744,10 @@ public static class Snippet
     /// </summary>
     /// <param name="origin">Origin position</param>
     /// <param name="creature">Creature where the part need to be targeted</param>
-    /// <param name="mask">Mask Apply (write it in binary : 0b11111111111) : 1 means get the part, 0 means don't get the part : in the order of the bit from left to right : 
+    /// <param name="mask">Mask Apply (write it in binary : 0b00011111111111) : 1 means get the part, 0 means don't get the part : in the order of the bit from left to right : 
     /// Tail, RightWing, LeftWing, RightFoot, LeftFoot, RightLeg, LeftLeg, RightHand, LeftHand, RightArm, LeftArm, Torso, Neck, Head</param>
     /// <param name="partToExclude">Part to exclude in case it's the same part (for random case)</param>
-    public static RagdollPart FarestRagdollPart(this Vector3 origin, Creature creature, int mask = 0b11111111111111, RagdollPart partToExclude = null)
+    public static RagdollPart FarestRagdollPart(this Vector3 origin, Creature creature, int mask = 0b00011111111111, RagdollPart partToExclude = null)
     {
         float lastRadius = 0f;
         float thisRadius;
@@ -1218,9 +1781,17 @@ public static class Snippet
     }
 
 
-    public static Vector3 HomingTarget(Rigidbody projectileRb, Vector3 targetPosition, float initialDistance, float forceFactor, float offSetInitialDistance = 0.25f, float distanceToStick = 0f)
+    public static Vector3 HomingTarget(Item projectile, Vector3 targetPosition, float initialDistance, float forceFactor, float offSetInitialDistance = 0.25f, float distanceToStick = 0f)
     {
-        return Vector3.Lerp(projectileRb.velocity, (targetPosition - projectileRb.position).normalized * Vector3.Distance(targetPosition, projectileRb.position) * forceFactor, Vector3.Distance(targetPosition, projectileRb.position).Remap01(initialDistance + offSetInitialDistance, distanceToStick));
+        return Vector3.Lerp(projectile.rb.velocity,
+            (targetPosition - projectile.transform.position).normalized * Vector3.Distance(targetPosition, projectile.transform.position) * forceFactor,
+            Vector3.Distance(targetPosition, projectile.transform.position).Remap01(initialDistance + offSetInitialDistance, distanceToStick));
+    }
+
+    public static Vector3 HomingBehaviour(Item projectile, Vector3 targetPosition, float initialTime, float forceFactor = 30f, float speed = 1f)
+    {
+        return Quaternion.Slerp(Quaternion.identity, Quaternion.FromToRotation(projectile.rb.velocity, targetPosition - projectile.transform.position), Time.deltaTime * forceFactor * Mathf.Clamp01((Time.time - initialTime) / 0.5f))
+            * projectile.rb.velocity.normalized * Vector3.Distance(targetPosition, projectile.transform.position) * speed;
     }
 
     // Thank you Wully !
@@ -1461,9 +2032,9 @@ public static class Snippet
     }
     public static void ImbueItem(this Item item, string ID)
     {
-	SpellCastCharge magic = Catalog.GetData<SpellCastCharge>(ID, true);
+        SpellCastCharge magic = Catalog.GetData<SpellCastCharge>(ID, true);
         foreach (Imbue imbue in item.imbues)
-        {   
+        {
             if (imbue.energy < imbue.maxEnergy)
             {
                 imbue.Transfer(magic, imbue.maxEnergy);
@@ -1614,6 +2185,13 @@ public static class Snippet
         gameObject?.GetComponent<LineRenderer>()?.SetPosition(1, Player.local.handRight.ragdollHand.fingerIndex.tip.position);
     }
 
+    public static string GetPath(this Transform current)
+    {
+        if (current.parent == null)
+            return "/" + current.name;
+        return GetPath(current.parent) + "/" + current.name;
+    }
+
     public static void AddHolderPoint(Item item, Vector3 position)
     {
         GameObject GO = new GameObject("HolderPoint");
@@ -1678,6 +2256,11 @@ public static class Snippet
             holder.slots.Add(slot.transform);
         }
         return holder;
+    }
+
+    public static void Set<T>(this object source, string fieldName, T val)
+    {
+        source.GetType().GetField(fieldName, BindingFlags.Instance | BindingFlags.NonPublic).SetValue(source, val);
     }
 
 
@@ -1908,16 +2491,15 @@ public static class Snippet
         //private Texture targetTexture;
         //AsyncOperationHandle<Material> handleFreezeMaterial = Addressables.LoadAssetAsync<Material>("Neeshka.TestFreeze.Freeze_Mat");
         //Counting timers
-        private float timerSlow;
+        private float timerSlow = 1f;
         private float timerFreeze;
-        private float timerFrozen;
 
         private bool isFrozen = false;
         private bool endOfFreeze = false;
 
-        private float totalTimeOfFreezeRagdoll;
+        private float totalTimeOfFreezeRagdoll = Random.Range(7.0f, 10.0f);
 
-        public void Awake()
+        public void Init(float timerSlowing, float timerFreezeRagdoll)
         {
             creature = GetComponent<Creature>();
             creature.OnDespawnEvent += time =>
@@ -1925,6 +2507,15 @@ public static class Snippet
                 if (time == EventTime.OnStart)
                 {
                     Disable();
+                }
+            };
+            creature.OnKillEvent += (collisionInstance, time) =>
+            {
+                if (time == EventTime.OnStart)
+                {
+                    creature.animator.speed = orgAnimatorSpeed;
+                    creature.brain.Load(brainId);
+                    creature.ragdoll.creature.brain.instance.GetModule<BrainModuleSpeak>().audioPitchRange = orgSpeakPitchRange;
                 }
             };
             orgAnimatorSpeed = creature.animator.speed;
@@ -1936,8 +2527,8 @@ public static class Snippet
             orgColorEyesIris = creature.GetColor(Creature.ColorModifier.EyesIris);
             orgColorEyesSclera = creature.GetColor(Creature.ColorModifier.EyesSclera);
             orgColorSkin = creature.GetColor(Creature.ColorModifier.Skin);
-            timerSlow = 1;
-            totalTimeOfFreezeRagdoll = Random.Range(7.0f, 10.0f);
+            timerSlow = timerSlowing;
+            totalTimeOfFreezeRagdoll = timerFreezeRagdoll;
             timerFreeze = totalTimeOfFreezeRagdoll - timeOfFreezing;
             targetColorHair = colorFreeze;
             targetColorHairSecondary = colorFreeze;
@@ -1979,6 +2570,7 @@ public static class Snippet
             });*/
             //creature.renderers.ForEach(i => Catalog.LoadAssetAsync<Material>("Neeshka.TestFreeze.Freeze_Shader", mat => i.renderer.material = mat, "handleFreezeMaterial"));
         }
+
         public void UpdateSpeed()
         {
             creature.animator.speed = animatorSpeed;
@@ -2188,7 +2780,7 @@ public static class Snippet
                                                                     Mathf.Lerp(orgCreatureAngularVelocity.z * ratioSlow / factor, orgCreatureAngularVelocity.z, timerBlend));
                 creature.locomotion.rb.drag = Mathf.Lerp(factor * 100f, orgLocomotionDrag, timerBlend);
                 creature.locomotion.rb.angularDrag = Mathf.Lerp(factor * 100f, orgLocomotionAngularDrag, timerBlend);
-                for (int i = creature.ragdoll.parts.Count() - 1; i >= 0; --i)
+                for (int i = creature.ragdoll.parts.Count - 1; i >= 0; --i)
                 {
                     creature.ragdoll.parts[i].ragdoll.SetPhysicModifier(this, 0, 0, factor * 100f, factor * 100f);
                     creature.ragdoll.parts[i].rb.velocity = new Vector3(Mathf.Lerp(orgCreatureVelocityPart[i].x * ratioSlow / factor, orgCreatureVelocityPart[i].x, timerBlend),
@@ -2244,7 +2836,7 @@ public static class Snippet
                     creature.locomotion.rb.angularVelocity = orgCreatureAngularVelocity;
                     creature.locomotion.rb.drag = orgLocomotionDrag;
                     creature.locomotion.rb.angularDrag = orgLocomotionAngularDrag;
-                    for (int i = creature.ragdoll.parts.Count() - 1; i >= 0; --i)
+                    for (int i = creature.ragdoll.parts.Count - 1; i >= 0; --i)
                     {
                         creature.ragdoll.parts[i].rb.velocity = orgCreatureVelocityPart[i];
                         creature.ragdoll.parts[i].rb.angularVelocity = orgCreatureAngularVelocityPart[i];
@@ -2257,5 +2849,343 @@ public static class Snippet
             //creature.brain.Load(brainId);
             Destroy(this);
         }
+    }
+    public class LightningBeam : MonoBehaviour
+    {
+        protected EffectData beamEffectData;
+        protected EffectInstance beamEffect;
+        public LayerMask beamMask = 144718849;
+        public float beamForce = 50f;
+        protected SpellCastCharge imbueSpell;
+        public float imbueAmount = 10f;
+        public float damageDelay = 0.5f;
+        public float damageAmount = 10f;
+        public AnimationCurve beamForceCurve = new AnimationCurve(new Keyframe[3]
+        {
+      new Keyframe(0.0f, 10f),
+      new Keyframe(0.05f, 25f),
+      new Keyframe(0.1f, 10f)
+        });
+        public float beamHandPositionSpringMultiplier = 1f;
+        public float beamHandPositionDamperMultiplier = 1f;
+        public float beamHandRotationSpringMultiplier = 0.2f;
+        public float beamHandRotationDamperMultiplier = 0.6f;
+        public float beamHandLocomotionVelocityCorrectionMultiplier = 1f;
+        public float beamLocomotionPushForce = 10f;
+        public float beamCastMinHandAngle = 20f;
+        public string beamImpactEffectId;
+        protected EffectData beamImpactEffectData;
+        public float chainRadius = 4f;
+        public float chainDelay = 1f;
+        protected EffectData electrocuteEffectData;
+        protected EffectData chainEffectData;
+        public bool beamActive;
+        public Ray beamRay;
+        public Transform beamStart;
+        public Transform beamHitPoint;
+        protected float lastDamageTick;
+        protected float lastChainTick;
+        protected Collider[] collidersHit;
+        protected HashSet<Creature> creaturesHit;
+        public float beamHookDamper = 150f;
+        public float beamHookSpring = 1000f;
+        public float beamHookSpeed = 20f;
+        public float beamHookMaxAngle = 30f;
+        public float zapInterval = 0.7f;
+        private LightningHookMergeUp hookedCreature;
+        private float lastZap;
+        private EffectInstance beamImpactEffect;
+        ParticleSystem.CollisionModule collisionModule = new ParticleSystem.CollisionModule();
+        ParticleSystem.CollisionModule childCollisionModule = new ParticleSystem.CollisionModule();
+        public bool isCasting;
+        private SpellCastLightning instance;
+        private float duration;
+        private float startTime;
+        public void Init(Vector3 origin, Vector3 directionOfBeam, float durationOfBeam)
+        {
+            beamEffectData = Catalog.GetData<EffectData>("SpellLightningMergeBeam");
+            imbueSpell = Catalog.GetData<SpellCastCharge>("Lightning");
+            chainEffectData = Catalog.GetData<EffectData>("SpellLightningBolt");
+            electrocuteEffectData = Catalog.GetData<EffectData>("ImbueLightningRagdoll");
+            beamImpactEffectData = Catalog.GetData<EffectData>("SpellLightningMergeBeamImpact");
+            collidersHit = new Collider[20];
+            beamForceCurve.postWrapMode = WrapMode.Loop;
+            creaturesHit = new HashSet<Creature>();
+            beamRay.origin = origin;
+            beamRay.direction = directionOfBeam;
+            instance = new SpellCastLightning();
+            duration = durationOfBeam;
+            startTime = Time.time;
+            Fire(true);
+        }
+
+        public void Update()
+        {
+            if (Time.time - lastZap > zapInterval)
+            {
+                lastZap = Time.time + Random.Range(-0.5f, 0.5f);
+                instance.ShockInRadius(beamRay.origin, 3f);
+            }
+            //End the beam
+            if (startTime < Time.time - duration)
+            {
+                Dispose();
+                return;
+            }
+            if (!beamActive)
+            {
+                beamActive = true;
+                beamEffect = beamEffectData.Spawn(beamStart);
+                EffectInstance effectInstance = beamEffect;
+                if (effectInstance != null)
+                {
+                    effectInstance.SetIntensity(1f);
+                }
+                EffectInstance effectInstance2 = beamEffect;
+                if (effectInstance2 != null)
+                {
+                    effectInstance2.Play();
+                }
+                if (beamEffect != null)
+                {
+                    foreach (EffectParticle effectParticle in beamEffect.effects.OfType<EffectParticle>())
+                    {
+
+                        collisionModule = effectParticle.rootParticleSystem.collision;
+                        collisionModule.collidesWith = beamMask;
+                        foreach (EffectParticleChild child in effectParticle.childs)
+                        {
+                            childCollisionModule = child.particleSystem.collision;
+                            childCollisionModule.collidesWith = beamMask;
+                        }
+                    }
+                }
+                beamStart.transform.SetPositionAndRotation(beamRay.origin, Quaternion.LookRotation(beamRay.direction));
+            }
+            if (!beamActive)
+                return;
+            beamStart.transform.SetPositionAndRotation(beamRay.origin, Quaternion.Slerp(beamStart.transform.rotation, Quaternion.LookRotation(beamRay.direction), Time.deltaTime * 3f));
+            if (hookedCreature && Vector3.Angle(beamRay.direction, hookedCreature.creature.ragdoll.GetPart(RagdollPart.Type.Torso).transform.position - beamRay.origin) > beamHookMaxAngle)
+            {
+                hookedCreature.Unhook();
+                hookedCreature = null;
+            }
+            RaycastHit hitInfo;
+            if (!Physics.SphereCast(beamRay, 0.1f, out hitInfo, 20f, beamMask, QueryTriggerInteraction.Ignore))
+            {
+                beamHitPoint.SetPositionAndRotation(beamRay.GetPoint(20f), Quaternion.LookRotation(-beamRay.direction));
+                if (beamImpactEffect != null)
+                {
+                    beamImpactEffect.End(false, -1f);
+                    beamImpactEffect = null;
+                }
+                return;
+            }
+            beamHitPoint.SetPositionAndRotation(hitInfo.point + beamRay.direction * 5f, Quaternion.LookRotation(-beamRay.direction));
+            if (beamEffectData != null && beamImpactEffect == null)
+            {
+                beamImpactEffect = beamEffectData.Spawn(beamHitPoint);
+                beamImpactEffect.Play();
+            }
+            if (hitInfo.collider.GetComponentInParent<Creature>() != null)
+            {
+                Creature componentInParent = hitInfo.collider.GetComponentInParent<Creature>();
+                if (componentInParent != null)
+                {
+                    creaturesHit.Add(componentInParent);
+                    componentInParent.ragdoll.AddPhysicToggleModifier(this);
+                }
+            }
+            if (hitInfo.rigidbody == null)
+                return;
+            CollisionHandler component = hitInfo.rigidbody.GetComponent<CollisionHandler>();
+            if (component == null)
+                return;
+            component.rb.AddForceAtPosition(beamRay.direction * beamForce, hitInfo.point, ForceMode.VelocityChange);
+            if (component.isItem)
+            {
+                ColliderGroup componentInParent2 = hitInfo.collider.GetComponentInParent<ColliderGroup>();
+                if (componentInParent2 != null && componentInParent2.imbue)
+                {
+                    componentInParent2.imbue.Transfer(imbueSpell, imbueAmount * Time.deltaTime);
+                    return;
+                }
+            }
+            else
+            {
+                RagdollPart ragdollPart = component.ragdollPart;
+                if (ragdollPart == null || !(ragdollPart.ragdoll.creature != Player.local.creature))
+                    return;
+                Creature creature = ragdollPart.ragdoll.creature;
+                if (creature != null)
+                {
+                    if (Time.time - lastDamageTick > damageDelay)
+                    {
+                        lastDamageTick = Time.time;
+                        creature.Damage(new CollisionInstance(new DamageStruct(DamageType.Energy, damageAmount)
+                        {
+                            pushLevel = 2
+                        })
+                        {
+                            casterHand = Player.local.creature.handRight.caster,
+                            contactPoint = hitInfo.point,
+                            contactNormal = hitInfo.normal,
+                            targetColliderGroup = hitInfo.collider.GetComponentInParent<ColliderGroup>()
+                        });
+                        creature.TryElectrocute(1f, 5f, true, false, electrocuteEffectData);
+                        TryHookCreature(creature);
+                    }
+                    if (Time.time - lastChainTick <= chainDelay)
+                        return;
+                    lastChainTick = Time.time;
+                    Chain(creature);
+                    creaturesHit.Add(creature);
+                }
+            }
+        }
+
+        private void TryHookCreature(Creature creature)
+        {
+            LightningHookMergeUp lightningHook = hookedCreature;
+            if (((lightningHook != null) ? lightningHook.creature : null) == creature)
+            {
+                return;
+            }
+            LightningHookMergeUp lightningHook2 = hookedCreature;
+            if (lightningHook2 != null)
+            {
+                lightningHook2.Unhook();
+            }
+            hookedCreature = creature.gameObject.GetOrAddComponent<LightningHookMergeUp>();
+            hookedCreature.Hook(this);
+        }
+
+        private void Chain(Creature creature)
+        {
+            RagdollPart part = creature.ragdoll.GetPart(RagdollPart.Type.Torso);
+            int num = Physics.OverlapSphereNonAlloc(part.transform.position, chainRadius, collidersHit, LayerMask.GetMask(new string[]
+            {
+                "BodyLocomotion"
+            }), QueryTriggerInteraction.Ignore);
+            if (num <= 0)
+                return;
+            Creature component = collidersHit[Random.Range(0, num)].GetComponent<Creature>();
+            if (component == null)
+                return;
+            RagdollPart part2 = component.ragdoll.GetPart(RagdollPart.Type.Torso);
+            Transform transform = creature.transform;
+            EffectInstance effectInstance = chainEffectData.Spawn(transform.position, transform.rotation);
+            effectInstance.SetSource(creature.ragdoll.GetPart(RagdollPart.Type.Torso).transform);
+            effectInstance.SetTarget(part2.transform);
+            effectInstance.Play();
+            component.TryElectrocute(1f, 5f, true, false, electrocuteEffectData);
+            component.TryPush(Creature.PushType.Magic, (part2.transform.position - part.transform.position).normalized * 2f, 1, 0);
+        }
+
+        public void Fire(bool active)
+        {
+            if (active)
+            {
+                EffectInstance effectInstance = beamEffect;
+                if (effectInstance != null)
+                {
+                    effectInstance.End(false, -1f);
+                }
+                beamEffect = null;
+                if (beamStart == null)
+                {
+                    beamStart = new GameObject("Beam Target").transform;
+                }
+                if (beamHitPoint == null)
+                {
+                    beamHitPoint = new GameObject("Beam Hit").transform;
+                }
+            }
+            else
+            {
+                EffectInstance effectInstance2 = beamEffect;
+                if (effectInstance2 != null)
+                {
+                    effectInstance2.End(false, -1f);
+                }
+                beamEffect = null;
+                foreach (Creature creature in creaturesHit)
+                {
+                    creature.ragdoll.RemovePhysicToggleModifier(this);
+                }
+                if (beamImpactEffect != null)
+                {
+                    beamImpactEffect.End(false, -1f);
+                    beamImpactEffect = null;
+                }
+                LightningHookMergeUp lightningHook = hookedCreature;
+                if (lightningHook != null)
+                {
+                    lightningHook.Unhook();
+                }
+                hookedCreature = null;
+            }
+            beamActive = false;
+        }
+
+        private void Dispose()
+        {
+            Fire(false);
+            Destroy(this);
+        }
+    }
+    private class LightningHookMergeUp : MonoBehaviour
+    {
+        public Creature creature;
+        private SpringJoint joint;
+        private Rigidbody jointRb;
+        private LightningBeam beamSpell;
+        private bool active;
+
+        private void Awake()
+        {
+            creature = GetComponent<Creature>();
+            jointRb = new GameObject(creature.name + " Lightning Hook Joint RB").AddComponent<Rigidbody>();
+            jointRb.isKinematic = true;
+            jointRb.useGravity = false;
+            creature.OnDespawnEvent += time =>
+            {
+                if (time != EventTime.OnStart)
+                    return;
+                Destroy(this);
+            };
+        }
+        public void Hook(LightningBeam hookingbeam)
+        {
+            if (active)
+                return;
+            beamSpell = hookingbeam;
+            RagdollPart part = creature.ragdoll.GetPart(RagdollPart.Type.Torso);
+            creature.ragdoll.SetState(Ragdoll.State.Destabilized);
+            creature.brain.AddNoStandUpModifier(this);
+            creature.ragdoll.AddPhysicToggleModifier(this);
+            creature.ragdoll.SetPhysicModifier(this, 0.0f);
+            jointRb.transform.position = part.transform.position;
+            joint = part.rb.gameObject.AddComponent<SpringJoint>();
+            joint.autoConfigureConnectedAnchor = false;
+            joint.connectedBody = jointRb;
+            joint.connectedAnchor = Vector3.zero;
+            joint.anchor = Vector3.zero;
+            joint.spring = beamSpell.beamHookSpring;
+            joint.damper = beamSpell.beamHookDamper;
+            active = true;
+        }
+
+        public void Unhook()
+        {
+            if (!active)
+                return;
+            active = false;
+            Destroy(joint);
+            creature.brain.RemoveNoStandUpModifier(this);
+            creature.ragdoll.RemovePhysicToggleModifier(this);
+            creature.ragdoll.RemovePhysicModifier(this);
+        }
+        private void OnDestroy() => Destroy(joint);
     }
 }

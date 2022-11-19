@@ -19,7 +19,7 @@ namespace Lumiere
         public bool isStuck = false;
         public Item itemStuck;
         public RagdollPart partStuck;
-        private FixedJoint stickyJoint;
+        private Transform transformToStuck;
         private Creature creatureStuck;
 
 
@@ -104,10 +104,8 @@ namespace Lumiere
                         itemStuck = Snippet.ClosestItemAroundItemOverlapSphere(itemLumiere, 0.2f);
                         if (itemStuck != itemLumiere)
                         {
-                            stickyJoint = new FixedJoint();
-                            stickyJoint = Snippet.CreateStickyJointBetweenTwoRigidBodies(itemLumiere.rb, itemStuck.rb, stickyJoint);
+                            transformToStuck = itemStuck.transform;
                             itemStuck.OnDespawnEvent += ItemStuck_OnDespawnEvent;
-                            isStuck = true;
                         }
                     }
                     else
@@ -115,24 +113,15 @@ namespace Lumiere
                         partStuck = Snippet.ClosestRagdollPartAroundItemOverlapSphere(itemLumiere, 0.2f);
                         if (partStuck != null)
                         {
-                            stickyJoint = new FixedJoint();
-                            stickyJoint = Snippet.CreateStickyJointBetweenTwoRigidBodies(itemLumiere.rb, partStuck.rb, stickyJoint);
+                            transformToStuck = partStuck.transform;
                             creatureStuck = partStuck.ragdoll.creature;
+                            creatureStuck.ragdoll.AddPhysicToggleModifier(this);
                             creatureStuck.OnDespawnEvent += CreatureStuck_OnDespawnEvent;
-                            isStuck = true;
                         }
                     }
-                    if (isStuck)
+                    if (transformToStuck != null)
                     {
                         SetTKHandle(false);
-                        itemLumiere.rb.mass = 0f;
-                        itemLumiere.rb.drag = 0f;
-                        itemLumiere.rb.angularDrag = 0f;
-                        foreach (CollisionHandler handler in itemLumiere.collisionHandlers)
-                        {
-                            handler.SetPhysicModifier(this, 0f, 0f, 0f, 0f);
-                        }
-                        DisableCollision();
                         if (lumiereController.data.holdingALightRightHand)
                         {
                             Player.local.creature.handRight.UnGrab(false);
@@ -189,12 +178,9 @@ namespace Lumiere
             {
                 if (isStuck && partStuck != null)
                 {
-                    if (stickyJoint != null)
-                    {
-                        Destroy(stickyJoint);
-                    }
+                    AttachLight(false);
                     SetTKHandle(true);
-                    isStuck = false;
+                    creatureStuck.ragdoll.RemovePhysicToggleModifier(this);
                     creatureStuck.OnDespawnEvent -= CreatureStuck_OnDespawnEvent;
                     creatureStuck = null;
                 }
@@ -208,12 +194,7 @@ namespace Lumiere
             {
                 if (isStuck && itemStuck != null)
                 {
-                    if (stickyJoint != null)
-                    {
-                        Destroy(stickyJoint);
-                    }
                     SetTKHandle(true);
-                    isStuck = false;
                     itemStuck.OnDespawnEvent -= ItemStuck_OnDespawnEvent;
                     itemStuck = null;
                 }
@@ -261,6 +242,10 @@ namespace Lumiere
             {
                 lumiereController.data.holdingALightLeftHand = false;
             }
+            if(transformToStuck != null)
+            {
+                AttachLight(true, transformToStuck);
+            }
             DisableCollision();
         }
 
@@ -271,13 +256,20 @@ namespace Lumiere
         {
             if (isStuck)
             {
-                if (stickyJoint != null)
-                {
-                    Destroy(stickyJoint);
-                }
                 SetTKHandle(true);
-                isStuck = false;
-                itemStuck = null;
+                AttachLight(false);
+                if(itemStuck != null)
+                {
+                    itemStuck.OnDespawnEvent -= ItemStuck_OnDespawnEvent;
+                    itemStuck = null;
+                }
+                if(creatureStuck != null)
+                {
+                    creatureStuck.ragdoll.RemovePhysicToggleModifier(this);
+                    creatureStuck.OnDespawnEvent -= CreatureStuck_OnDespawnEvent;
+                    creatureStuck = null;
+                }
+                transformToStuck = null;
             }
             FreezeLight(false);
             if (ragdollHand.side == Side.Right)
@@ -305,6 +297,7 @@ namespace Lumiere
             itemLumiere.OnUngrabEvent -= ItemLumiere_OnUngrabEvent;
             itemLumiere.OnTelekinesisGrabEvent -= ItemLumiere_OnTelekinesisGrabEvent;
             itemLumiere.OnTelekinesisReleaseEvent -= ItemLumiere_OnTelekinesisReleaseEvent;
+            itemLumiere.transform.parent = null;
             for (int i = itemLumiere.handlers.Count() - 1; i >= 0; --i)
             {
                 itemLumiere.handlers[i].UnGrab(false);
@@ -333,9 +326,6 @@ namespace Lumiere
         {
             if (enable)
             {
-                itemLumiere.rb.mass = massOri;
-                itemLumiere.rb.drag = dragOri;
-                itemLumiere.rb.angularDrag = angularDragOri;
                 foreach (CollisionHandler handler in itemLumiere.collisionHandlers)
                 {
                     handler.SetPhysicModifier(this, 0f, 0f, 1000f, 1000f);
@@ -345,12 +335,33 @@ namespace Lumiere
             }
             else
             {
+                itemLumiere.rb.mass = massOri;
+                itemLumiere.rb.drag = dragOri;
+                itemLumiere.rb.angularDrag = angularDragOri;
                 foreach (CollisionHandler handler in itemLumiere.collisionHandlers)
                 {
                     handler.RemovePhysicModifier(this);
                 }
                 EnableCollision();
             }
+        }
+
+        private void AttachLight(bool active = true, Transform transform = null)
+        {
+            if (active)
+            {
+                itemLumiere.transform.SetParent(transform);
+                foreach (CollisionHandler handler in itemLumiere.collisionHandlers)
+                {
+                    handler.SetPhysicModifier(this, 0f, 0f, dragOri, angularDragOri);
+                }
+            }
+            else
+            {
+                itemLumiere.transform.parent = transform;
+            }
+            itemLumiere.rb.isKinematic = active;
+            isStuck = active;
         }
     }
 }

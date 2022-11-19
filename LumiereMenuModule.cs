@@ -347,7 +347,7 @@ namespace Lumiere
         }
         public void ClickStickToItemOrCreature()
         {
-            //lumiereController.data.StickToItemFalseCreatureTrueGetSet ^= true;
+            lumiereController.data.StickToItemWhenFalseCreatureTrueGetSet ^= true;
             UpdateDataPageLeft1();
         }
 
